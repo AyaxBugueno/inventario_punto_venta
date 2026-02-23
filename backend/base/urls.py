@@ -7,6 +7,7 @@ from modulo_principal.views import CookieTokenObtainPairView, CookieTokenRefresh
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/',include('modulo_principal.urls')),
+    path('api/', include('punto_venta.urls')),
     
     #vistas de sesión
     path('api/token/', CookieTokenObtainPairView.as_view(), name='token_obtain_pair'),

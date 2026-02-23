@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { type Producto } from '../domain/models/Producto';
 
-const API_URL = 'http://localhost:8000/api/productos/';
+const API_URL = 'http://127.0.0.1:8000/api/productos/';
 
 export const productoService = {
     // AHORA: acepta filtros

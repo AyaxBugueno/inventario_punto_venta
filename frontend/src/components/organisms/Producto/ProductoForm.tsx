@@ -1,10 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { type Producto } from '../../../domain/models/Producto';
-// guardamos este import para las futuras categorias: import { SearchSelect } from '../../molecules/SearchSelect';
 import axios from 'axios';
 
 interface Props {
-    // IMPORTANTE: onSubmit debe lanzar una excepción (reject) si falla la petición HTTP
     onSubmit: (producto: Producto) => Promise<void | any>;
     initialData?: Producto | null;
     onCancel?: () => void;
@@ -15,19 +13,15 @@ export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
     const initialState: Producto = {
         nombre: '',
         descripcion: '',
-        cantidad_mg: 0,
-        cantidad_capsulas: 0,
-        es_bioequivalente: false,
         codigo_serie: '',
         precio_venta: 0,
+        stock_actual: 0,
+        stock_critico: 5,
         activo: true,
-        stock_total: 0,
     };
 
     const [form, setForm] = useState<Producto>(initialState);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
-    // 1. NUEVO ESTADO DE ERRORES (Igual que en LoteForm)
     const [errors, setErrors] = useState<Record<string, string[]>>({});
 
     useEffect(() => {
@@ -36,15 +30,11 @@ export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
         } else {
             setForm(initialState);
         }
-        // Limpiamos errores al cambiar entre crear/editar
         setErrors({});
     }, [initialData]);
 
-    // 2. HELPER PARA LIMPIAR ERRORES AL ESCRIBIR
     const handleChange = (field: keyof Producto, value: any) => {
         setForm(prev => ({ ...prev, [field]: value }));
-        
-        // Si existe un error visual en ese campo, lo borramos
         if (errors[field]) {
             setErrors(prev => {
                 const newErrors = { ...prev };
@@ -54,32 +44,23 @@ export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
         }
     };
 
-    // 3. HANDLESUBMIT REESTRUCTURADO
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setErrors({}); 
-
         setIsSubmitting(true);
 
         const productoParaEnviar: Producto = {
             ...form,
-            id: initialData?.id, // Aseguramos el ID si es edición
+            id: initialData?.id, 
         };
 
         try {
-            // Esperamos que onSubmit lance error si falla el backend
             await onSubmit(productoParaEnviar);
-
-            // ÉXITO
-            if (!initialData) {
-                setForm(initialState);
-            }
-            if (onCancel) onCancel(); // Opcional: cerrar modal al guardar
-
+            if (!initialData) setForm(initialState);
+            if (onCancel) onCancel(); 
         } catch (error) {
-            // CAPTURA DE ERROR AXIOS 400 (Bad Request / Validation Error)
             if (axios.isAxiosError(error) && error.response?.status === 400) {
-                setErrors(error.response.data); // Asigna los errores a los inputs
+                setErrors(error.response.data); 
             } else {
                 alert("Ocurrió un error inesperado al guardar el producto.");
                 console.error(error);
@@ -89,24 +70,21 @@ export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
         }
     };
 
-    // Helper para clases de input (para no repetir código)
     const inputClass = (fieldName: string) => `
         w-full border p-2 rounded focus:ring-2 outline-none 
         ${errors[fieldName] 
             ? 'border-red-500 ring-red-200 focus:ring-red-500' 
-            : 'border-gray-300 focus:ring-blue-500'
+            : 'border-gray-300 focus:ring-indigo-500'
         }
     `;
 
     return (
         <div className="bg-white p-6 rounded-sm mb-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">
+            <h2 className="text-xl font-semibold mb-4 text-slate-800">
                 {initialData ? 'Editar Producto' : 'Registrar Nuevo Producto'}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-                
-                {/* MOSTRAR ERRORES GENERALES (non_field_errors) */}
                 {errors.non_field_errors && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
                         {errors.non_field_errors[0]}
@@ -114,13 +92,12 @@ export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                    {/* CAMPO NOMBRE */}
+                    {/* NOMBRE */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Nombre *</label>
                         <input
                             className={inputClass('nombre')}
-                            placeholder="Ej: Audifonos samsung"
+                            placeholder="Ej: Red Bull 250ml"
                             value={form.nombre}
                             onChange={e => handleChange('nombre', e.target.value)}
                             required
@@ -128,9 +105,9 @@ export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
                         {errors.nombre && <span className="text-red-500 text-xs font-bold mt-1 block">{errors.nombre[0]}</span>}
                     </div>
 
-                    {/* CAMPO CÓDIGO SERIE */}
+                    {/* CÓDIGO SERIE */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">SKU / Código Barra *</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">SKU / Código Barra *</label>
                         <input
                             className={inputClass('codigo_serie')}
                             placeholder="Ej: 78000123"
@@ -141,82 +118,71 @@ export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
                          {errors.codigo_serie && <span className="text-red-500 text-xs font-bold mt-1 block">{errors.codigo_serie[0]}</span>}
                     </div>
 
-                   
-
                     {/* PRECIO VENTA */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Precio Venta *</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Precio Venta *</label>
                         <input
                             type="number"
                             min="0"
                             className={inputClass('precio_venta')}
-                            value={form.precio_venta || ''}
+                            value={form.precio_venta === 0 ? '' : form.precio_venta}
                             onChange={e => handleChange('precio_venta', Number(e.target.value))}
                             required
                         />
                         {errors.precio_venta && <span className="text-red-500 text-xs font-bold mt-1 block">{errors.precio_venta[0]}</span>}
                     </div>
 
-                    {/* DOSIS (MG) */}
+                    {/* STOCK ACTUAL */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Dosis (mg) *</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Stock Inicial *</label>
                         <input
                             type="number"
-                            min="1"
-                            className={inputClass('cantidad_mg')}
-                            value={form.cantidad_mg || ''}
-                            onChange={e => handleChange('cantidad_mg', Number(e.target.value))}
+                            min="0"
+                            className={inputClass('stock_actual')}
+                            value={form.stock_actual === 0 ? '' : form.stock_actual}
+                            onChange={e => handleChange('stock_actual', Number(e.target.value))}
                             required
                         />
-                         {errors.cantidad_mg && <span className="text-red-500 text-xs font-bold mt-1 block">{errors.cantidad_mg[0]}</span>}
+                         {errors.stock_actual && <span className="text-red-500 text-xs font-bold mt-1 block">{errors.stock_actual[0]}</span>}
                     </div>
+                </div>
 
-                    {/* CANTIDAD CÁPSULAS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* STOCK CRÍTICO */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Cápsulas/Unidades</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Alerta Stock Bajo (Crítico)</label>
                         <input
                             type="number"
-                            min="1"
-                            className={inputClass('cantidad_capsulas')}
-                            value={form.cantidad_capsulas || ''}
-                            onChange={e => handleChange('cantidad_capsulas', Number(e.target.value))}
+                            min="0"
+                            className={inputClass('stock_critico')}
+                            value={form.stock_critico}
+                            onChange={e => handleChange('stock_critico', Number(e.target.value))}
                         />
-                        {errors.cantidad_capsulas && <span className="text-red-500 text-xs font-bold mt-1 block">{errors.cantidad_capsulas[0]}</span>}
+                        <span className="text-xs text-slate-500">Avisar cuando queden esta cantidad o menos.</span>
+                    </div>
+
+                    {/* DESCRIPCIÓN */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Descripción (Opcional)</label>
+                        <textarea
+                            className={inputClass('descripcion')}
+                            rows={2}
+                            value={form.descripcion}
+                            onChange={e => handleChange('descripcion', e.target.value)}
+                        />
                     </div>
                 </div>
 
-                {/* DESCRIPCIÓN */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Componente Activo / Descripción</label>
-                    <textarea
-                        className={inputClass('descripcion')}
-                        rows={2}
-                        value={form.descripcion}
-                        onChange={e => handleChange('descripcion', e.target.value)}
-                    />
-                     {errors.descripcion && <span className="text-red-500 text-xs font-bold mt-1 block">{errors.descripcion[0]}</span>}
-                </div>
-
-                {/* CHECKBOXES */}
-                <div className="flex gap-6 items-center py-2">
-                    <label className="flex items-center gap-2 cursor-pointer text-gray-700 select-none">
+                {/* CHECKBOX ACTIVO */}
+                <div className="flex gap-6 items-center py-2 border-t mt-4 pt-4">
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700 select-none">
                         <input
                             type="checkbox"
-                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                            checked={form.es_bioequivalente}
-                            onChange={e => handleChange('es_bioequivalente', e.target.checked)}
-                        />
-                        <span>Es Bioequivalente</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer text-gray-700 select-none">
-                        <input
-                            type="checkbox"
-                            className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+                            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
                             checked={form.activo}
                             onChange={e => handleChange('activo', e.target.checked)}
                         />
-                        <span>Producto Activo</span>
+                        <span className="font-medium">Producto Activo para la Venta</span>
                     </label>
                 </div>
 
@@ -226,7 +192,7 @@ export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
                         <button
                             type="button"
                             onClick={() => { setForm(initialState); setErrors({}); onCancel(); }}
-                            className="px-4 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+                            className="px-4 py-2 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
                             disabled={isSubmitting}
                         >
                             Cancelar
@@ -235,11 +201,11 @@ export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className={`px-6 py-2 rounded font-medium text-white transition
-                            ${isSubmitting ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}
+                        className={`px-6 py-2 rounded font-medium text-white transition shadow-sm
+                            ${isSubmitting ? 'bg-slate-400' : 'bg-indigo-600 hover:bg-indigo-700'}
                         `}
                     >
-                        {isSubmitting ? 'Guardando...' : (initialData ? 'Actualizar' : 'Guardar')}
+                        {isSubmitting ? 'Guardando...' : (initialData ? 'Actualizar Producto' : 'Guardar Producto')}
                     </button>
                 </div>
             </form>

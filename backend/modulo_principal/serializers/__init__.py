@@ -1,10 +1,9 @@
 from .usuarioSerializer import UsuarioListaSerializer,UsuarioRegistroSerializer
-from .inventarioSerializer import ProductoSerializer,LoteSerializer,CategoriaSerializer
+from .inventarioSerializer import ProductoSerializer,CategoriaSerializer
 
 __all__ = [
     'UsuarioListaSerializer',
     'UsuarioRegistroSerializer',
     'ProductoSerializer',
-    'LoteSerializer',
     'CategoriaSerializer',
 ]

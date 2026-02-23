@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UsuarioViewSet, ProductoViewSet,LoteViewSet, GlobalSearchView,CategoriaViewSet
+from .views import UsuarioViewSet, ProductoViewSet, GlobalSearchView,CategoriaViewSet
 
 
 router = DefaultRouter()
@@ -11,7 +11,7 @@ router.register(r'usuarios',UsuarioViewSet, basename = 'usuario')
 #api de inventario
 router.register(r'categorias',CategoriaViewSet, basename='categoria')
 router.register(r'productos',ProductoViewSet,basename = 'producto')
-router.register(r'lotes',LoteViewSet,basename='lote')
+
 
 
 urlpatterns = [

@@ -4,9 +4,10 @@ import { LoginPage } from './pages/LoginPage';
 import { ComponentsShowcase } from './pages/ComponentsShowcase';
 import { authService } from './services/auth.service'; // Tu función que llama a /api/me/
 import ProductosPage from './pages/ProductosPage';
-import LotesPage from './pages/LotesPages';
 import POSPage from './pages/POSpage';
 import CategoriasPage from './pages/CategoriaPage';
+import DashboardPage from './pages/DashboardPage';
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -57,12 +58,17 @@ function App() {
         
         <Route 
           path='/login' 
-          element={!user ? <LoginPage onLoginSuccess={handleLogin} /> : <Navigate to="/showcase" />} 
+          element={!user ? <LoginPage onLoginSuccess={handleLogin} /> : <Navigate to="/ventas" />} 
         />
 
         <Route 
           path='/showcase' 
           element={user ? <ComponentsShowcase /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path='/ventas'
+          element={user ? <DashboardPage/> : <Navigate to ="/login" />}
         />
 
         <Route
@@ -72,18 +78,15 @@ function App() {
 
         <Route 
           path='/' 
-          element={<Navigate to={user ? "/showcase" : "/login"} />} 
+          element={<Navigate to={user ? "/ventas" : "/login"} />} 
         />
 
 
         <Route path="/productos" 
         element={user ? <ProductosPage /> : <Navigate to="/login" />}
         />
-        <Route path="/lotes" 
-        element={user ? <LotesPage /> : <Navigate to="/login" />}
-        />
         <Route path = "/categorias"
-        element={user ? <CategoriasPage/> : <Navigate to = "/categorias"/>}
+        element={user ? <CategoriasPage/> : <Navigate to = "/login"/>}
         />
       </Routes>
 

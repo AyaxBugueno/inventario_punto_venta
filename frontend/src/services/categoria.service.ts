@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { type Categoria } from '../domain/models/Categoria';
 
-const API_URL = 'http://localhost:8000/api/categorias/'; // Asegúrate de que coincida con tu urls.py de Django
+const API_URL = 'http://127.0.0.1:8000/api/categorias/'; // Asegúrate de que coincida con tu urls.py de Django
 
 export const categoriaService = {
     getAll: async (page: number = 1, filters: Record<string, any> = {}) => {

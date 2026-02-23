@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Venta, DetalleVenta
-from modulo_principal.serializers import ProductoSerializer # Reutilizamos para mostrar info bonita
+# from modulo_principal.serializers import ProductoSerializer # (Opcional si lo usas, pero con los CharField suele bastar)
 
 class DetalleVentaSerializer(serializers.ModelSerializer):
     # Campos de solo lectura para mostrar info del producto en el recibo/historial
@@ -12,7 +12,7 @@ class DetalleVentaSerializer(serializers.ModelSerializer):
         fields = [
             'id', 
             'producto', 
-            'lote', 
+            # ¡Adiós 'lote'!
             'cantidad', 
             'precio_unitario', 
             'subtotal', 
@@ -21,10 +21,10 @@ class DetalleVentaSerializer(serializers.ModelSerializer):
         ]
 
 class VentaSerializer(serializers.ModelSerializer):
-    # Nested Serializer: Incluimos los detalles dentro de la venta
+    # Nested Serializer: Incluimos los detalles dentro de la boleta
     detalles = DetalleVentaSerializer(many=True, read_only=True)
     
-    # Campo extra para mostrar el nombre del vendedor
+    # Campo extra para mostrar el nombre del vendedor en el frontend sin hacer otra petición
     vendedor_nombre = serializers.CharField(source='usuario.username', read_only=True)
 
     class Meta:
@@ -39,5 +39,5 @@ class VentaSerializer(serializers.ModelSerializer):
             'anulada', 
             'detalles'
         ]
-        read_only_fields = ['id', 'fecha', 'total', 'usuario'] 
-        # El total y usuario se calcularán/asignarán en el backend, no se confía en el frontend.
+        # Excelente práctica: Protegemos estos campos para que nadie los inyecte por POST
+        read_only_fields = ['id', 'fecha', 'total', 'usuario', 'anulada']

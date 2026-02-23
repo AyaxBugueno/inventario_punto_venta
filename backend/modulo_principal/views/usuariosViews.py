@@ -24,7 +24,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 #vista para mantener autenticado al usuario
 
 class UserProfileView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         serializer = UsuarioListaSerializer(request.user)
