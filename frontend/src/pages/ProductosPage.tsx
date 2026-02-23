@@ -10,44 +10,72 @@ import { SmartFilter, type FilterConfig } from '../components/organisms/SmartFil
 import { productoService } from '../services/producto.service'; 
 import { AddButton } from '../components/atoms/Button/AddButton';
 import { type Producto } from '../domain/models/Producto';
+import { categoriaService } from '../services/categoria.service';
 
 const ProductosPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
 
     // 1. ESTADO PARA FILTROS
     const [currentFilters, setCurrentFilters] = useState<Record<string, any>>({});
+    
+    // 2. ESTADO PARA CATEGORÍAS
+    const [categorias, setCategorias] = useState<any[]>([]); 
 
-    // 2. HOOK DE PRODUCTOS (Ahora recibe filtros)
+    // 3. HOOK DE PRODUCTOS (Recibe filtros)
     const { 
         productos, loading, error, pagination,
         crearProducto, eliminarProducto, actualizarProducto,
     } = useProductos(currentFilters);
 
-   
-
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProd, setEditingProd] = useState<Producto | null>(null);
     const [fetchingSingle, setFetchingSingle] = useState(false); 
 
-    // ---------------------------------------------
-    // 3. CONFIGURACIÓN DEL SMART FILTER
-    // ---------------------------------------------
-    const filterConfig: FilterConfig[] = useMemo(() => [
-        { 
-            key: 'search', 
-            label: 'Buscar (Nombre/SKU)', 
-            type: 'text' 
-        },
+    // 4. EFECTO PARA CARGAR CATEGORÍAS
+    useEffect(() => {
+        categoriaService.getAll()
+            .then((data) => {
+                // Manejo de respuesta paginada de Django
+                if (data && data.results) {
+                    setCategorias(data.results);
+                } 
+                // Manejo de respuesta plana
+                else if (Array.isArray(data)) {
+                    setCategorias(data);
+                }
+            })
+            .catch((err) => console.error("Error cargando categorías:", err));
+    }, []);
 
-        { 
-            key: 'activo', 
-            label: 'Estado', 
-            type: 'boolean' 
-        },
-       
-        
-       
-    ], []);
+    // ---------------------------------------------
+    // 5. CONFIGURACIÓN DEL SMART FILTER
+    // ---------------------------------------------
+    const filterConfig: FilterConfig[] = useMemo(() => {
+        // Validación estricta para asegurar que map no falle nunca
+        const categoriasSeguras = Array.isArray(categorias) ? categorias : [];
+
+        return [
+            { 
+                key: 'search', 
+                label: 'Buscar (Nombre/SKU)', 
+                type: 'text' 
+            },
+            { 
+                key: 'activo', 
+                label: 'Estado', 
+                type: 'boolean' 
+            },
+            {
+                key: 'categoria', // Coincide con filterset_fields = {'categoria': ['exact']} en Django
+                label: 'Categoría',
+                type: 'select',
+                options: categoriasSeguras.map(cat => ({
+                    id: cat.id,
+                    label: cat.nombre 
+                }))
+            }
+        ];
+    }, [categorias]);
 
     const handleFilterChange = (newFilters: Record<string, any>) => {
         setCurrentFilters(newFilters);
@@ -55,18 +83,17 @@ const ProductosPage = () => {
     };
 
     // ---------------------------------------------
-    // 4. LÓGICA DE URL Y MODAL (Optimizada)
+    // 6. LÓGICA DE URL Y MODAL 
     // ---------------------------------------------
     useEffect(() => {
         const editId = searchParams.get('editar');
         if (!editId) {
             setEditingProd(null)
             setIsModalOpen(false)
-            return;}
+            return;
+        }
         
         const idToFind = Number(editId);
-
-        // Guardia de seguridad para evitar re-renders infinitos o lag
         if (isModalOpen && editingProd?.id === idToFind) return;
 
         const productoEnLista = productos.find(p => p.id === idToFind); 
@@ -130,7 +157,7 @@ const ProductosPage = () => {
                     onFilterChange={handleFilterChange} 
                 />
 
-                {/* Feedback de Carga/Error */}
+                {/* Feedback de Carga/Error de Producto Individual */}
                 {fetchingSingle && (
                     <div className="fixed top-20 right-6 bg-yellow-50 text-yellow-700 px-4 py-2 rounded-lg shadow-lg border border-yellow-200 text-sm animate-pulse z-50">
                         ⏳ Cargando datos del producto...
@@ -185,7 +212,6 @@ const ProductosPage = () => {
                             onSubmit={handleSubmit}
                             initialData={editingProd}
                             onCancel={handleCloseModal}
-                            
                         />
                     )}
                 </Modal>
@@ -195,3 +221,4 @@ const ProductosPage = () => {
 };
 
 export default ProductosPage;
+

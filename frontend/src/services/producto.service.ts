@@ -1,36 +1,36 @@
-import axios from 'axios';
+import api from '../api/axios'; // ¡Usa siempre tu instancia personalizada!
 import { type Producto } from '../domain/models/Producto';
 
-const API_URL = 'http://127.0.0.1:8000/api/productos/';
+const URL_BASE = '/productos/';
 
 export const productoService = {
-    // AHORA: acepta filtros
     getAll: async (page: number = 1, filters: Record<string, any> = {}) => {
-        const response = await axios.get(API_URL, {
+        const response = await api.get(URL_BASE, {
             params: {
                 page,
-                ...filters // Aquí irán: laboratorio, activo, es_bioequivalente, etc.
+                ...filters
             }
         });
         return response.data;
     },
 
     getById: async (id: number): Promise<Producto> => {
-        const response = await axios.get(`${API_URL}${id}/`);
+        const response = await api.get(`${URL_BASE}${id}/`);
         return response.data;
     },
 
     create: async (producto: Producto): Promise<Producto> => {
-        const response = await axios.post(API_URL, producto);
+        const response = await api.post(URL_BASE, producto);
         return response.data;
     },
 
-    update: async (id: number, producto: Producto): Promise<Producto> => {
-        const response = await axios.put(`${API_URL}${id}/`, producto);
+    // CAMBIO A PATCH: Ideal para actualizaciones parciales
+    update: async (id: number, producto: Partial<Producto>): Promise<Producto> => {
+        const response = await api.patch(`${URL_BASE}${id}/`, producto);
         return response.data;
     },
 
     delete: async (id: number): Promise<void> => {
-        await axios.delete(`${API_URL}${id}/`);
+        await api.delete(`${URL_BASE}${id}/`);
     }
 };

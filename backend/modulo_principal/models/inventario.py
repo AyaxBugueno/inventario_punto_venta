@@ -29,7 +29,7 @@ class Producto(models.Model):
     codigo_serie = models.CharField(max_length=13, unique=True, verbose_name="Código de Barras / SKU")
     precio_venta = models.PositiveIntegerField(default=0)
     
-    # --- NUEVOS CAMPOS DE STOCK INTEGRADO ---
+
     stock_actual = models.PositiveIntegerField(default=0, verbose_name="Stock Disponible")
     stock_critico = models.PositiveIntegerField(default=5, help_text="Nivel mínimo para alertas de bajo stock")
     
@@ -39,10 +39,10 @@ class Producto(models.Model):
         return f"{self.nombre}"
     
     def save(self, *args, **kwargs):
-        # Lógica Fricción Cero: Si el stock llega a 0, se desactiva solo.
+        
         if self.stock_actual <= 0 and self.activo:
             self.activo = False
-        # Si le vuelven a cargar stock y estaba inactivo, se activa solo.
+       
         elif self.stock_actual > 0 and not self.activo:
             self.activo = True
             

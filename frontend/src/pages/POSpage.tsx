@@ -13,32 +13,34 @@ const POSPage = () => {
     const [paymentMethod, setPaymentMethod] = useState('EFECTIVO'); // Por defecto
 
     const handleProcessSale = async () => {
-        if (cartItems.length === 0) return;
+    if (cartItems.length === 0) return;
+    
+    setIsProcessing(true);
+    try {
+        // El payload debe coincidir con lo que tu VentaViewSet.create espera
+        const payload = {
+            metodo_pago: paymentMethod,
+            detalles: cartItems.map(item => ({ // <-- Cambiado de 'items' a 'detalles'
+                producto_id: item.producto.id,
+                cantidad: item.cantidad
+            }))
+        };
+
+        const nuevaVenta = await ventaService.create(payload as any);
         
-        setIsProcessing(true);
-        try {
-            // Preparamos el payload simple para el backend
-            const payload: CreateVentaPayload = {
-                metodo_pago: paymentMethod,
-                items: cartItems.map(item => ({
-                    producto_id: item.producto.id!,
-                    cantidad: item.cantidad
-                }))
-            };
+        // Un alert más limpio o un modal de éxito
+        alert(`✅ Venta exitosa por $${nuevaVenta.total.toLocaleString()}`);
+        clearCart();
 
-            const nuevaVenta = await ventaService.create(payload);
-            
-            alert(`✅ Venta registrada con éxito!\nID: ${nuevaVenta.id.substring(0,8)}\nTotal: $${nuevaVenta.total}`);
-            clearCart();
-            // Aquí podrías redirigir a una vista de impresión de recibo
-
-        } catch (error) {
-            console.error("Error procesando venta:", error);
-            alert("❌ Error al procesar la venta. Verifica el stock o intenta nuevamente.");
-        } finally {
-            setIsProcessing(false);
-        }
-    };
+    } catch (error: any) {
+        console.error("Error procesando venta:", error);
+        // Intentamos mostrar el error que viene del backend (ej: "Stock insuficiente")
+        const msg = error.response?.data?.error || "Error al procesar la venta.";
+        alert(`❌ ${msg}`);
+    } finally {
+        setIsProcessing(false);
+    }
+};
 
     // --- Definición de Áreas para el Template ---
 
@@ -56,11 +58,10 @@ const POSPage = () => {
                     <select 
                         className="w-full p-3 border rounded bg-gray-50 text-lg font-medium"
                         value={paymentMethod}
-                        onChange={e => setPaymentMethod(e.target.value)}
-                    >
-                        <option value="EFECTIVO">💵 Efectivo</option>
-                        <option value="DEBITO">💳 Tarjeta Débito</option>
-                        <option value="CREDITO">💳 Tarjeta Crédito</option>
+                        onChange={e => setPaymentMethod(e.target.value)}>  
+                        <option value="EFECTIVO">Efectivo</option>
+                        <option value="DEBITO"> Tarjeta Débito</option>
+                        <option value="CREDITO"> Tarjeta Crédito</option>
                     </select>
                 </div>
 

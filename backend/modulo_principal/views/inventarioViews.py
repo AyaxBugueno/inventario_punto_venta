@@ -24,7 +24,8 @@ class CategoriaViewSet(viewsets.ModelViewSet):
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['nombre', 'descripcion'] 
-    filterset_fields = {'activo': ['exact']}
+    filterset_fields = {'activo': ['exact'],
+                        'nombre':['exact']}
     ordering_fields = ['nombre', 'descripcion']
 
 
@@ -106,7 +107,7 @@ class GlobalSearchView(APIView):
                 'id': p.id,
                 'titulo': p.nombre,
                 # Ahora el buscador global mostrará cuánto stock queda directamente
-                'subtitulo': f"Precio: ${p.precio_venta} | Stock: {p.stock_actual}", 
+                'subtitulo': f"Precio: ${p.precio_venta} | Stock: {p.stock_actual} | Categoria: {p.categoria__nombre}", 
                 'extra': p.codigo_serie
             } for p in productos],
         }
