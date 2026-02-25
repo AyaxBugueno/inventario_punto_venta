@@ -1,124 +1,94 @@
 import random
+from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.db import transaction
 from django.contrib.auth import get_user_model
 
-# Imports exactos de tus apps
+# Imports de tus modelos
 from modulo_principal.models import Producto
-from punto_venta.models import Venta, DetalleVenta
+from punto_venta.models import Venta, DetalleVenta, SesionCaja
 
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Simula un día completo de ventas (9:00 a 22:00) para probar el Dashboard.'
+    help = 'Simula 30 días de ventas para probar el Historial y Dashboard.'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.WARNING('Iniciando simulación del día en el Minimarket...'))
+        self.stdout.write(self.style.WARNING('🚀 Iniciando simulación de MES COMPLETO...'))
 
-        # 1. Obtener el usuario (Cajero)
         usuario = User.objects.first()
         if not usuario:
-            self.stdout.write(self.style.ERROR('No hay usuarios en la BD. Crea un superuser primero (python manage.py createsuperuser).'))
+            self.stdout.write(self.style.ERROR('No hay usuarios en la BD.'))
             return
 
-        # 2. Configurar el "Día de Hoy"
-        hoy = timezone.now().date()
-        
-        # 3. Traer todos los productos con stock disponible
-        productos_disponibles = list(Producto.objects.filter(activo=True, stock_actual__gt=0))
-        
+        productos_disponibles = list(Producto.objects.filter(activo=True))
         if not productos_disponibles:
-            self.stdout.write(self.style.ERROR('No hay productos con stock. Corre tu seed de minimarket primero.'))
+            self.stdout.write(self.style.ERROR('No hay productos.'))
             return
 
-        boletas_generadas = 0
-        ingresos_simulados = 0
+        hoy_dt = timezone.now()
+        total_boletas_mes = 0
 
-        with transaction.atomic():
-            # Limpiar ventas SOLO DE HOY por si corres el script varias veces, para no duplicar datos
-            inicio_dia = timezone.make_aware(timezone.datetime.combine(hoy, timezone.datetime.min.time()))
-            Venta.objects.filter(fecha__gte=inicio_dia).delete()
-            self.stdout.write('Ventas de hoy reiniciadas. Comenzando nueva simulación...')
+        # --- BUCLE DE 30 DÍAS HACIA ATRÁS ---
+        for d in range(30, -1, -1):
+            fecha_simulada = hoy_dt.date() - timedelta(days=d)
+            self.stdout.write(f'Simulando día: {fecha_simulada}...')
 
-            # Bucle de horas: de 09:00 a 21:00 (cerrando a las 22:00)
-            for hora in range(9, 22):
+            with transaction.atomic():
+                # 1. Crear la Sesión de Caja para este día específico
+                # La creamos como cerrada (esta_abierta=False) excepto si es el día de hoy
+                es_hoy = (d == 0)
                 
-                # SIMULADOR DE FLUJO DE CLIENTES:
-                # - Mañana (9 a 12): Flujo normal
-                # - Almuerzo (13 a 14): Flujo medio
-                # - Tarde (15 a 17): Flujo bajo
-                # - Salida del trabajo (18 a 21): Hora PEAK
-                if hora in [18, 19, 20, 21]:
-                    clientes_en_esta_hora = random.randint(15, 30)
-                elif hora in [13, 14]:
-                    clientes_en_esta_hora = random.randint(5, 12)
-                elif hora in [15, 16, 17]:
-                    clientes_en_esta_hora = random.randint(1, 4)
-                else:
-                    clientes_en_esta_hora = random.randint(3, 8)
+                caja = SesionCaja.objects.create(
+                    usuario_apertura=usuario,
+                    monto_inicial=15000,
+                    esta_abierta=es_hoy,
+                    fecha_cierre=None if es_hoy else timezone.make_aware(timezone.datetime.combine(fecha_simulada, timezone.datetime.min.time().replace(hour=21, minute=30)))
+                )
+                
+                # Ajustamos la fecha de apertura manualmente
+                hora_apertura = timezone.make_aware(timezone.datetime.combine(fecha_simulada, timezone.datetime.min.time().replace(hour=8, minute=50)))
+                SesionCaja.objects.filter(id=caja.id).update(fecha_apertura=hora_apertura)
 
-                for _ in range(clientes_en_esta_hora):
-                    # Generar un minuto y segundo aleatorio dentro de esta hora
-                    minuto = random.randint(0, 59)
-                    segundo = random.randint(0, 59)
-                    hora_simulada = timezone.make_aware(timezone.datetime(hoy.year, hoy.month, hoy.day, hora, minuto, segundo))
+                # 2. Simular Ventas por hora
+                for hora in range(9, 21):
+                    # Flujo variable según la hora
+                    if hora in [13, 14, 18, 19, 20]:
+                        clientes = random.randint(10, 20)
+                    else:
+                        clientes = random.randint(2, 6)
 
-                    # Crear la boleta base
-                    venta = Venta.objects.create(
-                        usuario=usuario,
-                        metodo_pago=random.choice(['EFECTIVO', 'DEBITO', 'DEBITO', 'EFECTIVO', 'TRANSFERENCIA']),
-                        total=0
-                    )
-                    
-                    # TRUCO DJANGO: Como 'fecha' tiene auto_now_add=True, forzamos la hora simulada con un update directo
-                    Venta.objects.filter(id=venta.id).update(fecha=hora_simulada)
+                    for _ in range(clientes):
+                        minuto = random.randint(0, 59)
+                        momento_venta = timezone.make_aware(timezone.datetime.combine(fecha_simulada, timezone.datetime.min.time().replace(hour=hora, minute=minuto)))
 
-                    total_boleta = 0
-                    cant_tipos_productos = random.randint(1, 4) # El cliente lleva entre 1 y 4 productos distintos
-                    
-                    # Seleccionar productos al azar para esta compra
-                    productos_comprados = random.sample(productos_disponibles, min(cant_tipos_productos, len(productos_disponibles)))
-                    
-                    objetos_detalle = []
+                        venta = Venta.objects.create(
+                            usuario=usuario,
+                            sesion=caja,
+                            metodo_pago=random.choice(['EFECTIVO', 'DEBITO', 'TRANSFERENCIA']),
+                            total=0
+                        )
+                        # Forzamos la fecha de la venta
+                        Venta.objects.filter(id=venta.id).update(fecha=momento_venta)
 
-                    for prod in productos_comprados:
-                        # Refrescar el producto desde la BD por si se le acabó el stock en la compra anterior
-                        prod.refresh_from_db()
+                        # Agregar productos al detalle
+                        total_v = 0
+                        items = random.sample(productos_disponibles, random.randint(1, 3))
+                        detalles = []
                         
-                        if prod.stock_actual <= 0:
-                            continue
-
-                        # Unidades que lleva de este producto (ej: 2 bebidas)
-                        cantidad_lleva = random.randint(1, min(3, prod.stock_actual))
+                        for p in items:
+                            cant = random.randint(1, 2)
+                            sub = cant * p.precio_venta
+                            total_v += sub
+                            detalles.append(DetalleVenta(
+                                venta=venta, producto=p, cantidad=cant,
+                                precio_unitario=p.precio_venta, subtotal=sub
+                            ))
                         
-                        subtotal = cantidad_lleva * prod.precio_venta
-                        total_boleta += subtotal
+                        DetalleVenta.objects.bulk_create(detalles)
+                        Venta.objects.filter(id=venta.id).update(total=total_v)
+                        total_boletas_mes += 1
 
-                        # Descontar stock directamente (Lógica Fricción Cero)
-                        prod.stock_actual -= cantidad_lleva
-                        if prod.stock_actual == 0:
-                            prod.activo = False
-                        prod.save(update_fields=['stock_actual', 'activo'])
-
-                        objetos_detalle.append(DetalleVenta(
-                            venta=venta,
-                            producto=prod,
-                            cantidad=cantidad_lleva,
-                            precio_unitario=prod.precio_venta,
-                            subtotal=subtotal
-                        ))
-
-                    # Guardar los detalles en bloque
-                    if objetos_detalle:
-                        DetalleVenta.objects.bulk_create(objetos_detalle)
-                        # Actualizar el total de la venta
-                        Venta.objects.filter(id=venta.id).update(total=total_boleta)
-                        
-                        boletas_generadas += 1
-                        ingresos_simulados += total_boleta
-
-        self.stdout.write(self.style.SUCCESS(f'🚀 SIMULACIÓN EXITOSA!'))
-        self.stdout.write(self.style.SUCCESS(f'✅ Boletas emitidas hoy: {boletas_generadas}'))
-        self.stdout.write(self.style.SUCCESS(f'💰 Ingresos totales: ${ingresos_simulados:,.0f} CLP'))
-        self.stdout.write(self.style.SUCCESS('Ve a tu Frontend y revisa el Dashboard. ¡Los gráficos deberían estar llenos!'))
+        self.stdout.write(self.style.SUCCESS(f'✅ Simulación completada.'))
+        self.stdout.write(self.style.SUCCESS(f'📊 Se generaron 31 sesiones de caja y {total_boletas_mes} ventas.'))

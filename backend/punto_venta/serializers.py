@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Venta, DetalleVenta
+from .models import Venta, DetalleVenta,SesionCaja
 # from modulo_principal.serializers import ProductoSerializer # (Opcional si lo usas, pero con los CharField suele bastar)
 
 class DetalleVentaSerializer(serializers.ModelSerializer):
@@ -41,3 +41,18 @@ class VentaSerializer(serializers.ModelSerializer):
         ]
         # Excelente práctica: Protegemos estos campos para que nadie los inyecte por POST
         read_only_fields = ['id', 'fecha', 'total', 'usuario', 'anulada']
+
+class SesionCajaSerializer(serializers.ModelSerializer):
+    usuario_nombre = serializers.CharField(source='usuario_apertura.username', read_only=True)
+    total_ingresos = serializers.IntegerField(read_only=True, default=0)
+    cantidad_ventas = serializers.IntegerField(read_only=True, default=0)
+    
+    class Meta:
+        model = SesionCaja
+        fields = [
+            'id', 'usuario_apertura', 'usuario_nombre', 
+            'fecha_apertura', 'fecha_cierre', 'monto_inicial', 
+            'esta_abierta', 'total_ingresos', 'cantidad_ventas'
+        ]
+
+

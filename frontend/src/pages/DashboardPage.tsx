@@ -1,8 +1,10 @@
+// src/pages/DashboardPage.tsx
 import { MainTemplate } from '../components/templates/MainTemplate';
 import { useDashboard } from '../hooks/Dashboard/useDashboard';
 import { StatCard } from '../components/molecules/StatCard';
 import { SalesChart } from '../components/organisms/Dashboard/SalesChart';
 import { TopProductsTable } from '../components/organisms/Dashboard/TopProductsTable';
+import { CajaControlPanel } from '../components/organisms/Dashboard/ControlPanel'; 
 import { DollarSign, ReceiptText, TrendingUp, RefreshCcw } from 'lucide-react';
 
 const DashboardPage = () => {
@@ -48,6 +50,9 @@ const DashboardPage = () => {
                         <RefreshCcw size={16} /> Actualizar
                     </button>
                 </div>
+
+                {/* 👇 PANEL DE CONTROL DE CAJA 👇 */}
+                <CajaControlPanel />
 
                 {/* Tarjetas de Resumen */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

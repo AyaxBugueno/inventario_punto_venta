@@ -7,7 +7,7 @@ import ProductosPage from './pages/ProductosPage';
 import POSPage from './pages/POSpage';
 import CategoriasPage from './pages/CategoriaPage';
 import DashboardPage from './pages/DashboardPage';
-
+import HistorialVentasPage from './pages/HistorialVentasPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -69,6 +69,10 @@ function App() {
         <Route 
           path='/ventas'
           element={user ? <DashboardPage/> : <Navigate to ="/login" />}
+        />
+        <Route 
+          path='/ventas/historial'
+          element={user ? <HistorialVentasPage /> : <Navigate to="/login" />}
         />
 
         <Route

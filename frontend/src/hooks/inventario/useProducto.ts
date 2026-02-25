@@ -72,20 +72,21 @@ export const useProductos = (filters: Record<string, any> = {}) => {
         setLoading(true);
         try {
             await productoService.update(id, prod);
-            // Es mejor re-fetchear porque los cambios pueden afectar el stock_total (propiedad calculada)
+            // CORRECCIÓN: Usamos 'page' y 'filters' que viven dentro de este hook
             await fetchProductos(page, filters);
             return true;
-        } catch (err) {
-            if (axios.isAxiosError(err) && err.response?.status === 400){
-                throw err;
+        } catch (err: any) {
+            if (err.response?.status === 400) {
+                throw err; 
             }
+            
+            // CORRECCIÓN: Usamos 'setGlobalError', que es el estado real de tu hook
             setGlobalError('Error crítico al actualizar el producto');
             throw err;
         } finally {
             setLoading(false);
         }
     };
-
     const eliminarProducto = async (id: number) => {
         // Podrías añadir un confirm aquí si no lo tienes en el componente
         try {

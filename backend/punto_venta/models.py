@@ -3,8 +3,57 @@ from django.db import models, transaction
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from modulo_principal.models import Producto # Ya no importamos Lote
+from django.utils import timezone
+
+class SesionCaja(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Quién abrió la caja
+    usuario_apertura = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='cajas_abiertas'
+    )
+    
+    # Tiempos
+    fecha_apertura = models.DateTimeField(auto_now_add=True, db_index=True)
+    fecha_cierre = models.DateTimeField(null=True, blank=True)
+    
+    # Control de dinero
+    monto_inicial = models.PositiveIntegerField(default=0, help_text="Sencillo o vuelto inicial")
+    
+    # Estado de la caja
+    esta_abierta = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Sesión de Caja"
+        verbose_name_plural = "Sesiones de Caja"
+        ordering = ['-fecha_apertura']
+
+    def __str__(self):
+        estado = "ABIERTA" if self.esta_abierta else "CERRADA"
+        return f"Caja {str(self.id)[:8]} - {estado} ({self.fecha_apertura.strftime('%d/%m/%Y')})"
+
+    def cerrar_caja(self):
+        """Método de utilidad para cerrar la sesión actual."""
+        if not self.esta_abierta:
+            raise ValidationError("Esta caja ya se encuentra cerrada.")
+        
+        self.esta_abierta = False
+        self.fecha_cierre = timezone.now()
+        self.save(update_fields=['esta_abierta', 'fecha_cierre'])
+
 
 class Venta(models.Model):
+
+    sesion = models.ForeignKey(
+        SesionCaja,
+        on_delete=models.PROTECT,
+        related_name='ventas',
+        null=True,  # Permitimos nulos temporalmente
+        blank=True
+    )
+    
     METODOS_PAGO = [
         ('EFECTIVO', 'Efectivo'),
         ('DEBITO', 'Tarjeta Débito'),
@@ -81,3 +130,6 @@ class DetalleVenta(models.Model):
         if not self.subtotal:
             self.subtotal = self.cantidad * self.precio_unitario
         super().save(*args, **kwargs)
+
+
+

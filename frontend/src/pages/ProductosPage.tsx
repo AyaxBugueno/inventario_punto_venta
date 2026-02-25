@@ -1,3 +1,4 @@
+// src/pages/ProductosPage.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useProductos } from '../hooks/inventario/useProducto';
@@ -35,11 +36,9 @@ const ProductosPage = () => {
     useEffect(() => {
         categoriaService.getAll()
             .then((data) => {
-                // Manejo de respuesta paginada de Django
                 if (data && data.results) {
                     setCategorias(data.results);
                 } 
-                // Manejo de respuesta plana
                 else if (Array.isArray(data)) {
                     setCategorias(data);
                 }
@@ -51,22 +50,13 @@ const ProductosPage = () => {
     // 5. CONFIGURACIÓN DEL SMART FILTER
     // ---------------------------------------------
     const filterConfig: FilterConfig[] = useMemo(() => {
-        // Validación estricta para asegurar que map no falle nunca
         const categoriasSeguras = Array.isArray(categorias) ? categorias : [];
 
         return [
-            { 
-                key: 'search', 
-                label: 'Buscar (Nombre/SKU)', 
-                type: 'text' 
-            },
-            { 
-                key: 'activo', 
-                label: 'Estado', 
-                type: 'boolean' 
-            },
+            { key: 'search', label: 'Buscar (Nombre/SKU)', type: 'text' },
+            { key: 'activo', label: 'Estado', type: 'boolean' },
             {
-                key: 'categoria', // Coincide con filterset_fields = {'categoria': ['exact']} en Django
+                key: 'categoria', 
                 label: 'Categoría',
                 type: 'select',
                 options: categoriasSeguras.map(cat => ({
@@ -79,7 +69,7 @@ const ProductosPage = () => {
 
     const handleFilterChange = (newFilters: Record<string, any>) => {
         setCurrentFilters(newFilters);
-        pagination.goToPage(1); // Reset a pág 1 al filtrar
+        pagination.goToPage(1); 
     };
 
     // ---------------------------------------------
@@ -88,12 +78,14 @@ const ProductosPage = () => {
     useEffect(() => {
         const editId = searchParams.get('editar');
         if (!editId) {
-            setEditingProd(null)
-            setIsModalOpen(false)
+            setEditingProd(null);
+            setIsModalOpen(false);
             return;
         }
         
         const idToFind = Number(editId);
+
+        // Prevenimos la recarga si el modal ya está abierto con el producto correcto
         if (isModalOpen && editingProd?.id === idToFind) return;
 
         const productoEnLista = productos.find(p => p.id === idToFind); 
@@ -111,6 +103,7 @@ const ProductosPage = () => {
                 .catch(() => setSearchParams({}))
                 .finally(() => setFetchingSingle(false));
         }
+    // 👇 Solo dependemos de la URL y si la lista creció/achicó
     }, [searchParams, productos.length]);
 
     const handleCreate = () => {
@@ -133,13 +126,22 @@ const ProductosPage = () => {
     };
 
     const handleSubmit = async (formData: Producto) => {
-        if (editingProd?.id) {
-            await actualizarProducto(editingProd.id, formData);
-        } else {
-            await crearProducto(formData);
+        try {
+            if (editingProd?.id) {
+                await actualizarProducto(editingProd.id, formData);
+            } else {
+                await crearProducto(formData);
+            }
+            handleCloseModal();
+        } catch (error: any) {
+            if (error.response?.status === 400) {
+                throw error; 
+            }
+            alert("Ocurrió un error inesperado.");
         }
-        handleCloseModal();
     };
+
+    // AQUÍ ESTABA EL ERROR: Tenías una llave "};" de más arriba que cerraba el componente antes del return.
 
     return (
         <MainTemplate>
@@ -221,4 +223,3 @@ const ProductosPage = () => {
 };
 
 export default ProductosPage;
-
