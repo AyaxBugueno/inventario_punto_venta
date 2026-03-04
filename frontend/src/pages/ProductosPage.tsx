@@ -158,7 +158,7 @@ const ProductosPage = () => {
     return (
         <MainTemplate>
             <div className="max-w-6xl mx-auto p-6">
-                <div className="flex bg-white p-6 rounded-xl shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] border border-slate-100 justify-between items-center mb-6">
+                <div className="flex bg-[#ffffff] p-6 rounded-sm shadow-[0_4px_24px_0_rgba(0,0,0,0.06)]  justify-between items-center mb-6">
                     <div className="flex items-center gap-4">
                         {/* Barra de acento lateral */}
                         <div className="w-1 h-12 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>

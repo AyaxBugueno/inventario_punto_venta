@@ -104,9 +104,26 @@ const CategoriasPage = () => {
         <MainTemplate>
             <div className="max-w-6xl mx-auto p-6">
                 
-                <div className="flex bg-slate-50 p-5 rounded-sm shadow-[0_8px_30px_rgb(0,0,0,0.03)] justify-between items-center mb-6 border border-slate-300">
-                    <h1 className="text-3xl font-bold text-gray-700">Maestro de Categorías</h1>
-                    <AddButton label='Nueva Categoría' onClick={handleCreate}/>
+                <div className="flex bg-white p-6 rounded-xl shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] border border-slate-100 justify-between items-center mb-6">
+                    <div className="flex items-center gap-4">
+                        {/* Barra de acento lateral */}
+                        <div className="w-1 h-12 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
+
+                        <div className="flex flex-col">
+                            <h1 className="text-2xl font-bold text-slate-800 leading-none">
+                                Maestro de categorias
+                            </h1>
+                            <span className="text-sm text-slate-400 mt-1 font-medium">
+                                Gestiona tus categorias
+                            </span>
+                        </div>
+                    </div>
+
+                    <AddButton
+                        label='Agregar categoria'
+                        onClick={handleCreate}
+                        className="shadow-[0_4px_12px_rgba(16,185,129,0.25),inset_0_1px_0_rgba(255,255,255,0.4)] transition-transform active:scale-95"
+                    />
                 </div>
 
                 <SmartFilter 

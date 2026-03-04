@@ -87,7 +87,7 @@ export const Navbar = () => {
 
             {/* Pie del Sidebar */}
             <div className="p-4 border-t border-slate-100 flex justify-center pb-6">
-                <LogoutButton className="w-full flex items-center justify-center gap-2 h-10 rounded-lg text-sm font-bold transition-all bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 hover:text-red-700 hover:shadow-[inset_0_2px_4px_rgba(220,38,38,0.1)] active:scale-95" />
+                <LogoutButton/>
             </div>
         </aside>
     );

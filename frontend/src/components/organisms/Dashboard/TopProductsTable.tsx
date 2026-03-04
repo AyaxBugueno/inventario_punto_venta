@@ -9,7 +9,7 @@ export const TopProductsTable = ({ data }: Props) => {
         new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(value);
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className=" bg-[#ffffff] p-6 rounded-sm shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] overflow-hidden">
             <div className="p-5 border-b border-slate-200">
                 <h3 className="text-lg font-bold text-slate-700">Top 5 Productos Más Vendidos</h3>
             </div>

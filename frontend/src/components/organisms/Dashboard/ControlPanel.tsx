@@ -23,14 +23,14 @@ export const CajaControlPanel = () => {
 
     if (loading) {
         return (
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 animate-pulse flex items-center justify-center h-24 mb-6">
+            <div className=" bg-[#ffffff] p-6 rounded-sm shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] animate-pulse flex items-center justify-center h-24 mb-6">
                 <span className="text-slate-500 font-medium">Sincronizando estado de la caja...</span>
             </div>
         );
     }
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-8">
+        <div className=" bg-[#ffffff] p-6 rounded-sm shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] mb-8">
             {error && (
                 <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md flex items-center gap-2 text-sm border border-red-100">
                     <AlertCircle size={18} />

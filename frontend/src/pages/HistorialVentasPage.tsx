@@ -34,35 +34,47 @@ const HistorialVentasPage = () => {
     return (
         <MainTemplate>
             <div className="max-w-7xl mx-auto p-2">
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-slate-800">Historial de Ventas</h1>
-                    <p className="text-slate-500">Consulta los turnos y sesiones de caja anteriores.</p>
+                <div className="flex bg-white p-6 rounded-sm shadow-[0_4px_24px_0_rgba(0,0,0,0.06)]  justify-between items-center mb-6">
+                    <div className="flex items-center gap-4">
+                        {/* Barra de acento lateral */}
+                        <div className="w-1 h-12 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
+
+                        <div className="flex flex-col">
+                            <h1 className="text-2xl font-bold text-slate-800 leading-none">
+                                Historial de ventas
+                            </h1>
+                            <span className="text-sm text-slate-400 mt-1 font-medium">
+                                Consulta tus ventas historicas
+                            </span>
+                        </div>
+                    </div>
+
                 </div>
 
                 <SmartFilter config={filterConfig} onFilterChange={handleFilterChange} />
 
-                <div className="bg-slate-50 rounded-sm shadow-sm border border-slate-300 overflow-hidden mt-4">
+                <div className="bg-[#ffffff] rounded-sm shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] overflow-hidden mt-4">
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-600">
-                            <thead className=" text-slate-500 font-medium ">
+                        <table className="min-w-full divide-y divide-slate-300 text-left text-sm text-slate-600">
+                            <thead className="bg-[#ffffff]">
                                 <tr>
-                                    <th className="px-6 py-4">Estado</th>
-                                    <th className="px-6 py-4">Apertura</th>
-                                    <th className="px-6 py-4">Cierre</th>
-                                    <th className="px-6 py-4">Usuario</th>
-                                    <th className="px-6 py-4 text-right">Ingresos</th>
-                                    <th className="px-6 py-4 text-center">Acciones</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Apertura</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Cierre</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Usuario</th>
+                                    <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Ingresos</th>
+                                    <th className="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200">
+                            <tbody className="divide-y divide-slate-300">
                                 {loading ? (
                                     <tr><td colSpan={6} className="text-center py-8">Cargando historial...</td></tr>
                                 ) : historial.length === 0 ? (
                                     <tr><td colSpan={6} className="text-center py-8 text-slate-400">No hay registros.</td></tr>
                                 ) : (
                                     historial.map((caja) => (
-                                        <tr key={caja.id} className="hover:bg-white transition-colors">
-                                            <td className="px-6 py-4">
+                                        <tr key={caja.id} className="hover:bg-slate-100 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
                                                 {caja.esta_abierta ? (
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                                                         <Unlock size={12} /> Abierta
@@ -73,18 +85,19 @@ const HistorialVentasPage = () => {
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-slate-800">{formatDate(caja.fecha_apertura)}</td>
-                                            <td className="px-6 py-4 text-slate-500">{formatDate(caja.fecha_cierre)}</td>
-                                            <td className="px-6 py-4 font-medium">{caja.usuario_nombre || 'Sistema'}</td>
-                                            <td className="px-6 py-4 text-right font-bold text-emerald-600">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">{formatDate(caja.fecha_apertura)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{formatDate(caja.fecha_cierre)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">{caja.usuario_nombre || 'Sistema'}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-emerald-600">
                                                 {formatCLP(caja.total_ingresos || 0)}
                                             </td>
-                                            <td className="px-6 py-4 text-center">
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 <button
                                                     onClick={() => navigate(`/ventas?sesion_id=${caja.id}`)}
-                                                    className="inline-flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                                                    className="inline-flex items-center justify-center gap-2 h-9 px-3 pl-3 pr-4 rounded-md text-sm font-medium transition-all active:scale-95 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-200 shadow-[0_4px_12px_rgba(99,102,241,0.15),inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.05)]"
                                                 >
-                                                    <Eye size={16} /> Ver Dashboard
+                                                    <Eye size={16} />
+                                                    <span>Ver Dashboard</span>
                                                 </button>
                                             </td>
                                         </tr>

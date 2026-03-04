@@ -10,6 +10,7 @@ backend/.env
 backend/__pycache__/
 backend/*.py[cod]
 backend/media/
+backend/db.sqlite3
 
 # Python (Archivos temporales)
 **/__pycache__/

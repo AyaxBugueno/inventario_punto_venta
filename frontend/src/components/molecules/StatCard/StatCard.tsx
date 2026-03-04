@@ -10,7 +10,7 @@ interface Props {
 
 export const StatCard = ({ title, value, icon, subtitle }: Props) => {
     return (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 flex items-center gap-4">
+        <div className=" bg-[#ffffff] p-6 rounded-sm shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] flex items-center gap-4">
             <div className="p-3 bg-[#d4af37]/20 text-[#d4af37] rounded-full">
                 {icon}
             </div>

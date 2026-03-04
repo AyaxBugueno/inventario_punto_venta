@@ -19,10 +19,10 @@ export const CategoriaTable = ({ data, onDelete, onEdit }: Props) => {
     }
 
     return (
-        <div className="bg-slate-50 rounded-sm shadow-[0_8px_30px_rgb(0,0,0,0.03)] overflow-hidden border border-slate-300">
+        <div className="bg-[#ffffff] rounded-sm shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] overflow-hidden ">
             <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-slate-50">
+                <table className="min-w-full divide-y divide-slate-300">
+                    <thead className="bg-[#ffffff]">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Descripción</th>
@@ -30,9 +30,9 @@ export const CategoriaTable = ({ data, onDelete, onEdit }: Props) => {
                             <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-slate-50' divide-y divide-gray-200">
+                    <tbody className="bg-slate-50' divide-y divide-slate-300">
                         {data.map((cat) => (
-                            <tr key={cat.id} className="hover:bg-white transition-colors">
+                            <tr key={cat.id} className="hover:bg-slate-100 transition-colors">
                                 
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {cat.nombre}

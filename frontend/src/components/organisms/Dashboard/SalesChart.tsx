@@ -14,7 +14,7 @@ export const SalesChart = ({ data }: Props) => {
     }
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <div className=" bg-[#ffffff] p-6 rounded-sm shadow-[0_4px_24px_0_rgba(0,0,0,0.06)]">
             <h3 className="text-lg font-bold text-slate-700 mb-4">Ingresos por Hora</h3>
             <div className="h-72 w-full">
                 <ResponsiveContainer width="100%" height="100%">

@@ -48,7 +48,7 @@ export const CustomSelect = ({ value, onChange, options = [], placeholder = "Tod
 
             {/* 2. La lista desplegable (AQUÍ CONTROLAS EL HOVER) */}
             {isOpen && (
-                <ul className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] overflow-hidden max-h-60 overflow-y-auto">
+                <ul className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden max-h-60 overflow-y-auto">
                     
                     {/* Opción por defecto (Limpiar) */}
                     <li 

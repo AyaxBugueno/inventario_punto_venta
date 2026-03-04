@@ -11,7 +11,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-slate-900 text-slate-50 hover:bg-slate-900/90", 
-        destructive: "bg-red-500 text-slate-50 hover:bg-red-600 shadow-[0_4px_12px_rgba(239,68,68,0.2),inset_0_1px_0_rgba(255,255,255,0.3),0_1px_2px_rgba(0,0,0,0.1)] transition-all active:scale-95",
+        destructive: "bg-red-100 text-red-700 hover:bg-red-200 shadow-[0_4px_12px_rgba(239,68,68,0.2),inset_0_1px_0_rgba(255,255,255,0.3),0_1px_2px_rgba(0,0,0,0.1)] transition-all active:scale-95",
         success: "bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 shadow-[0_4px_12px_rgba(34,197,94,0.15),inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.05)] transition-all active:scale-95", 
         outline: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-200 shadow-[0_4px_12px_rgba(234,179,8,0.15),inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.05)] transition-all active:scale-95", 
         secondary: "bg-slate-100 text-slate-900 hover:bg-slate-100/80", 
