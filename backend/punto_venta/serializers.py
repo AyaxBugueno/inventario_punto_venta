@@ -26,6 +26,7 @@ class VentaSerializer(serializers.ModelSerializer):
     
     # Campo extra para mostrar el nombre del vendedor en el frontend sin hacer otra petición
     vendedor_nombre = serializers.CharField(source='usuario.username', read_only=True)
+    cantidad_items = serializers.SerializerMethodField()
 
     class Meta:
         model = Venta
@@ -36,11 +37,19 @@ class VentaSerializer(serializers.ModelSerializer):
             'metodo_pago', 
             'usuario', 
             'vendedor_nombre', 
-            'anulada', 
-            'detalles'
+            'anulada',
+            'cantidad_items', 
+            'detalles',
         ]
         # Excelente práctica: Protegemos estos campos para que nadie los inyecte por POST
         read_only_fields = ['id', 'fecha', 'total', 'usuario', 'anulada']
+
+    def get_cantidad_items(self, obj):
+        """
+        Calcula el total de artículos físicos llevados.
+        Como en el ViewSet usaste prefetch_related('detalles'), esto NO genera consultas N+1 a la BD. Es instantáneo.
+        """
+        return sum(detalle.cantidad for detalle in obj.detalles.all())
 
 class SesionCajaSerializer(serializers.ModelSerializer):
     usuario_nombre = serializers.CharField(source='usuario_apertura.username', read_only=True)

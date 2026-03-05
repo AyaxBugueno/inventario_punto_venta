@@ -27,6 +27,7 @@ class VentaViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     
     filterset_fields = {
+        'sesion': ['exact'],
         'fecha': ['gte', 'lte'],      
         'metodo_pago': ['exact'],     
         'usuario': ['exact'],         
@@ -153,6 +154,14 @@ class VentaViewSet(viewsets.ModelViewSet):
                     usuario=usuario_que_anula
                 )
 
+    def paginate_queryset(self, queryset):
+        """
+        Si la petición viene del Dashboard (filtrando por 'sesion'), 
+        devolvemos TODAS las ventas para que React las pagine front-end.
+        """
+        if 'sesion' in self.request.query_params:
+            return None
+        return super().paginate_queryset(queryset)
 
 class EstándarPagination(PageNumberPagination):
     page_size = 10 

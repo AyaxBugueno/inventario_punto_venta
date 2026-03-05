@@ -1,10 +1,12 @@
 import { useState } from 'react';
 // Asume que CustomSelect está en el mismo directorio o ajusta el import
-import { CustomSelect } from '../../molecules/CustomSelect/CustomSelect'; 
+import { CustomSelect } from '../../molecules/CustomSelect/CustomSelect';
+import { HybridDatePicker } from '../../molecules/HybridDatePicker/HybridDatePicker';
+
 
 export type FilterConfig = {
-    key: string;           
-    label: string;         
+    key: string;
+    label: string;
     type: 'text' | 'select' | 'boolean' | 'date';
     options?: { id: string | number, label: string }[];
 };
@@ -25,7 +27,7 @@ export const SmartFilter = ({ config, onFilterChange }: Props) => {
         }
 
         setActiveFilters(newFilters);
-        onFilterChange(newFilters); 
+        onFilterChange(newFilters);
     };
 
     // Estilo solo para los inputs nativos restantes (texto y fecha)
@@ -64,8 +66,8 @@ export const SmartFilter = ({ config, onFilterChange }: Props) => {
                                 <label className="text-xs font-bold text-black-500 mb-1 block uppercase tracking-wide">
                                     {field.label}
                                 </label>
-                                <CustomSelect 
-                                    value={activeFilters[field.key]} 
+                                <CustomSelect
+                                    value={activeFilters[field.key]}
                                     onChange={(val) => handleChange(field.key, val)}
                                     options={field.options}
                                     placeholder="Todos"
@@ -81,8 +83,8 @@ export const SmartFilter = ({ config, onFilterChange }: Props) => {
                                 <label className="text-xs font-bold text-black-500 mb-1 block uppercase tracking-wide">
                                     {field.label}
                                 </label>
-                                <CustomSelect 
-                                    value={activeFilters[field.key]} 
+                                <CustomSelect
+                                    value={activeFilters[field.key]}
                                     onChange={(val) => handleChange(field.key, val)}
                                     // Pasamos el boolean como un array de options estándar para el CustomSelect
                                     options={[
@@ -98,15 +100,14 @@ export const SmartFilter = ({ config, onFilterChange }: Props) => {
                     // CASO 4: Fechas
                     if (field.type === 'date') {
                         return (
-                            <div key={field.key} className="min-w-[140px]">
-                                <label className="text-xs font-bold text-black-500 mb-1 block uppercase tracking-wide">
+                            <div key={field.key} className="min-w-[150px]">
+                                <label className="text-xs font-bold text-slate-500 mb-1 block uppercase tracking-wide">
                                     {field.label}
                                 </label>
-                                <input
-                                    type="date"
-                                    className={`${baseInputStyles} cursor-pointer`}
+                                <HybridDatePicker
                                     value={activeFilters[field.key] || ''}
-                                    onChange={(e) => handleChange(field.key, e.target.value)}
+                                    onChange={(val) => handleChange(field.key, val)}
+                                    placeholder="---"
                                 />
                             </div>
                         );

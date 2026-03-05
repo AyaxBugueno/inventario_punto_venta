@@ -5,90 +5,130 @@ import { ProductFinder } from '../components/molecules/ProductFinder';
 import { SaleTable } from '../components/organisms/SaleTable';
 import { useCart } from '../hooks/pos/useCart';
 import { ventaService } from '../services/venta.service';
-import {type CreateVentaPayload } from '../domain/models/Venta';
+import { Banknote, CreditCard, Landmark, ShoppingCart } from 'lucide-react'; // Iconos para los métodos de pago
 
 const POSPage = () => {
     const { cartItems, cartTotal, addToCart, removeFromCart, clearCart } = useCart();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState('EFECTIVO'); // Por defecto
+    const [paymentMethod, setPaymentMethod] = useState('EFECTIVO');
 
     const handleProcessSale = async () => {
-    if (cartItems.length === 0) return;
-    
-    setIsProcessing(true);
-    try {
-        // El payload debe coincidir con lo que tu VentaViewSet.create espera
-        const payload = {
-            metodo_pago: paymentMethod,
-            detalles: cartItems.map(item => ({ // <-- Cambiado de 'items' a 'detalles'
-                producto_id: item.producto.id,
-                cantidad: item.cantidad
-            }))
-        };
-
-        const nuevaVenta = await ventaService.create(payload as any);
+        if (cartItems.length === 0) return;
         
-        // Un alert más limpio o un modal de éxito
-        alert(`✅ Venta exitosa por $${nuevaVenta.total.toLocaleString()}`);
-        clearCart();
+        setIsProcessing(true);
+        try {
+            const payload = {
+                metodo_pago: paymentMethod,
+                detalles: cartItems.map(item => ({
+                    producto_id: item.producto.id,
+                    cantidad: item.cantidad
+                }))
+            };
 
-    } catch (error: any) {
-        console.error("Error procesando venta:", error);
-        // Intentamos mostrar el error que viene del backend (ej: "Stock insuficiente")
-        const msg = error.response?.data?.error || "Error al procesar la venta.";
-        alert(`❌ ${msg}`);
-    } finally {
-        setIsProcessing(false);
-    }
-};
+            const nuevaVenta = await ventaService.create(payload as any);
+            alert(`✅ Venta exitosa por $${nuevaVenta.total.toLocaleString()}`);
+            clearCart();
 
-    // --- Definición de Áreas para el Template ---
+        } catch (error: any) {
+            console.error("Error procesando venta:", error);
+            const msg = error.response?.data?.error || "Error al procesar la venta.";
+            alert(`❌ ${msg}`);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
 
     const ScannerArea = <ProductFinder onProductSelected={addToCart} />;
     const CartArea = <SaleTable items={cartItems} onRemove={removeFromCart} />;
     
     const SummarySidebar = (
-        <div className="h-full flex flex-col justify-between font-bold text-gray-700">
+        <div className="h-full flex flex-col justify-between bg-white rounded-xl shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] border border-slate-100 p-6">
+            
+            {/* Parte Superior del Sidebar */}
             <div>
-                <h2 className="text-2xl mb-6 uppercase tracking-wide border-b pb-2">Resumen de Venta</h2>
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
+                    <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+                        <ShoppingCart size={20} />
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-800 tracking-tight">Resumen de Venta</h2>
+                </div>
                 
-                {/* Selector Método Pago Simple */}
-                <div className="mb-6">
-                    <label className="block text-xs uppercase text-gray-500 mb-2">Método de Pago</label>
-                    <select 
-                        className="w-full p-3 border rounded bg-gray-50 text-lg font-medium"
-                        value={paymentMethod}
-                        onChange={e => setPaymentMethod(e.target.value)}>  
-                        <option value="EFECTIVO">Efectivo</option>
-                        <option value="DEBITO"> Tarjeta Débito</option>
-                        <option value="CREDITO"> Tarjeta Crédito</option>
-                    </select>
+                {/* Selector Método Pago con Diseño Premium */}
+                <div className="mb-8">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">
+                        Método de Pago
+                    </label>
+                    <div className="relative">
+                        <select 
+                            className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-800 text-sm font-bold p-3.5 pl-10 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-400 outline-none transition-all cursor-pointer shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+                            value={paymentMethod}
+                            onChange={e => setPaymentMethod(e.target.value)}
+                        >  
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="DEBITO">Tarjeta de Débito</option>
+                            <option value="CREDITO">Tarjeta de Crédito</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                        </select>
+                        {/* Icono dinámico según el método */}
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                            {paymentMethod === 'EFECTIVO' && <Banknote size={18} />}
+                            {(paymentMethod === 'DEBITO' || paymentMethod === 'CREDITO') && <CreditCard size={18} />}
+                            {paymentMethod === 'TRANSFERENCIA' && <Landmark size={18} />}
+                        </div>
+                        {/* Flecha del select */}
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="flex justify-between items-center mb-2 text-lg">
-                    <span>N° Ítems:</span>
-                    <span>{cartItems.length}</span>
+                {/* Subtotales (Preparando el terreno para el IVA después) */}
+                <div className="space-y-3 px-2">
+                    <div className="flex justify-between items-center text-sm font-medium text-slate-500">
+                        <span>Total Ítems:</span>
+                        <span className="text-slate-800 bg-slate-100 px-2 py-0.5 rounded">{cartItems.length}</span>
+                    </div>
+                    {/* Aquí en el futuro puedes poner el Neto y el IVA antes del total final */}
                 </div>
             </div>
 
-            <div>
-                 {/* Gran Total */}
-                <div className="flex justify-between items-end mb-6 bg-yellow-50 p-4 rounded-lg border-2 border-yellow-100">
-                    <span className="text-xl uppercase text-bold-200">Total a Pagar:</span>
-                    <span className="text-3xl font-black text-yellow-400">${cartTotal.toLocaleString()}</span>
+            {/* Parte Inferior (Total y Botón) */}
+            <div className="mt-auto pt-6">
+                {/* Display del Gran Total (Estilo Pantalla Digital) */}
+                <div className="bg-slate-800 p-5 rounded-2xl shadow-lg mb-6 relative overflow-hidden">
+                    {/* Decoración de fondo */}
+                    <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none"></div>
+                    
+                    <span className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total a Pagar</span>
+                    <span className="block text-4xl font-black text-white tracking-tight">
+                        <span className="text-emerald-400 mr-1">$</span>
+                        {cartTotal.toLocaleString()}
+                    </span>
                 </div>
 
-                {/* Botón de Pago */}
+                {/* Botón de Confirmación Masivo */}
                 <button 
                     onClick={handleProcessSale}
                     disabled={cartItems.length === 0 || isProcessing}
-                    className={`w-full p-5 rounded-lg text-2xl text-white uppercase tracking-wider transition-all
-                        ${cartItems.length === 0 || isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl'}
+                    className={`relative w-full p-4 rounded-xl text-lg font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden
+                        ${cartItems.length === 0 || isProcessing 
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' 
+                            : 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_8px_20px_rgba(16,185,129,0.3)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none'
+                        }
                     `}
                 >
-                    {isProcessing ? 'Procesando...' : 'Confirmar Venta (F10)'}
+                    {isProcessing ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Procesando...</span>
+                        </>
+                    ) : (
+                        <span>Cobrar (F10)</span>
+                    )}
                 </button>
-                 <p className="text-center text-xs text-gray-400 mt-2">Asegúrate de haber recibido el pago antes de confirmar.</p>
+                <p className="text-center text-[11px] font-medium text-slate-400 mt-4 uppercase tracking-wider">
+                    Asegúrese de recibir el pago
+                </p>
             </div>
         </div>
     );

@@ -1,22 +1,25 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom'; // <-- NUEVO IMPORT
+// src/hooks/Dashboard/useDashboard.ts
+import { useState, useEffect, useCallback } from 'react';
 import { dashboardService } from '../../services/dashboard.service';
 import { type DashboardData } from '../../domain/models/Dashboard';
 
-export const useDashboard = () => {
+// Ahora recibe el ID como parámetro
+export const useDashboard = (sesionId?: string | null) => {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    
-    // Capturamos los parámetros de la URL (Ej: ?sesion_id=123)
-    const [searchParams] = useSearchParams();
-    const sesionId = searchParams.get('sesion_id');
 
-    const fetchDashboard = async () => {
+    const fetchDashboard = useCallback(async () => {
+        // Si no hay ID de sesión (caja cerrada y sin historial), no consultamos nada y limpiamos.
+        if (!sesionId) {
+            setData(null);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
-            // Le pasamos el ID al servicio (asegúrate de que tu servicio dashboardService acepte este parámetro y lo mande a Axios)
-            const result = await dashboardService.getHoy(sesionId || undefined);
+            const result = await dashboardService.getHoy(sesionId);
             setData(result);
             setError(null);
         } catch (err) {
@@ -25,11 +28,13 @@ export const useDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [sesionId]);
 
     useEffect(() => {
         fetchDashboard();
-    }, [sesionId]); // <-- IMPORTANTÍSIMO: Refrescar si cambia la URL
+        // Cleanup: si cambia el ID o nos vamos, limpiamos los datos fantasmas
+        return () => setData(null);
+    }, [fetchDashboard]);
 
     return { data, loading, error, refetch: fetchDashboard };
 };

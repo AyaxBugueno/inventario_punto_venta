@@ -66,7 +66,7 @@ export const ProductoTable = ({ data, onDelete, onEdit, onViewKardex }: Props) =
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                         ${prod.activo 
-                                            ? 'bg-green-100 text-green-800 border border-green-200' 
+                                            ? 'bg-green-100 text-green-800 border border-green-400' 
                                             : 'bg-red-100 text-red-800 border border-red-200'}`
                                     }>
                                         {prod.activo ? 'Activo' : 'Inactivo'}

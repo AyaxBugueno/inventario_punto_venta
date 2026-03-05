@@ -16,7 +16,6 @@ from django.shortcuts import get_object_or_404
 
 
 
-
 class DashboardDiaView(APIView):
     """
     Retorna las métricas clave de ventas de la Sesión de Caja actual (o una histórica).
@@ -86,8 +85,10 @@ class DashboardDiaView(APIView):
         # -------------------------------------------------------------
         # MÉTRICA 3: Ventas por Hora (Para el gráfico de barras)
         # -------------------------------------------------------------
+        tz = timezone.get_current_timezone() # Captura la zona horaria de tu settings.py (ej: America/Santiago)
+
         ventas_por_hora = (
-            ventas_sesion.annotate(hora=ExtractHour('fecha'))
+            ventas_sesion.annotate(hora=ExtractHour('fecha', tzinfo=tz)) # INYECTAMOS EL TZ AQUI
             .values('hora')
             .annotate(
                 total_vendido=Sum('total'),

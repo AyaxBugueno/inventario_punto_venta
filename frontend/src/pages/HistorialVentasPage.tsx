@@ -33,7 +33,7 @@ const HistorialVentasPage = () => {
 
     return (
         <MainTemplate>
-            <div className="max-w-7xl mx-auto p-2">
+            <div className="max-w-6xl mx-auto p-6">
                 <div className="flex bg-white p-6 rounded-sm shadow-[0_4px_24px_0_rgba(0,0,0,0.06)]  justify-between items-center mb-6">
                     <div className="flex items-center gap-4">
                         {/* Barra de acento lateral */}
@@ -80,7 +80,7 @@ const HistorialVentasPage = () => {
                                                         <Unlock size={12} /> Abierta
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-200 text-slate-800">
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/60 shadow-sm">
                                                         <Lock size={12} /> Cerrada
                                                     </span>
                                                 )}
