@@ -1,12 +1,17 @@
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.core.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from rest_framework import status
+from django.db import transaction
+
+# 👇 IMPORTAMOS TU PAGINADOR CENTRALIZADO
+from modulo_principal.utils.pagination import EstándarPagination
 
 from ..models import Producto, Categoria
 from ..serializers import (
@@ -19,10 +24,12 @@ from ..serializers import (
 # ---------------------------------------------------------
 class CategoriaViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
-    authentication_classes = []
-
+    
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
+    
+    # 👇 APLICAMOS EL PAGINADOR EXPLÍCITAMENTE
+    pagination_class = EstándarPagination
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['nombre', 'descripcion'] 
@@ -35,10 +42,13 @@ class CategoriaViewSet(viewsets.ModelViewSet):
 # 2. PRODUCTOS
 # ---------------------------------------------------------
 class ProductoViewSet(viewsets.ModelViewSet):
-    permission_classes = [AllowAny] 
-    authentication_classes = [] 
-
+    # AL QUITAR LOS OVERRIDES, DJANGO AHORA USARÁ IsAuthenticated Y CustomJWTAuthentication
+    # DE TU settings.py POR DEFECTO PARA TODOS LOS ENDPOINTS DE PRODUCTOS.
+    
     serializer_class = ProductoSerializer
+    
+    # 👇 APLICAMOS EL PAGINADOR EXPLÍCITAMENTE
+    pagination_class = EstándarPagination
     
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['nombre', 'codigo_serie', 'descripcion', 'categoria__nombre']
@@ -48,23 +58,15 @@ class ProductoViewSet(viewsets.ModelViewSet):
         'categoria': ['exact'],
     }
     
-    # Añadimos stock_actual para que el frontend pueda ordenar por los que tienen más/menos stock
     ordering_fields = ['nombre', 'precio_venta', 'stock_actual']
 
     def get_queryset(self):
-        """
-        Smart Sorting simplificado:
-        1. Productos Activos
-        2. Mayor stock actual
-        3. Alfabético
-        """
         return Producto.objects.select_related('categoria').all().order_by(
             '-activo', '-stock_actual', 'nombre'
         )
 
     @action(detail=False, methods=['get'], pagination_class=None)
     def simple_list(self, request):
-        # Añadí stock_actual aquí, te será muy útil al armar el carrito en React
         data = Producto.objects.values('id', 'nombre', 'stock_actual', 'precio_venta')
         return Response(list(data))
 
@@ -72,7 +74,6 @@ class ProductoViewSet(viewsets.ModelViewSet):
         try:
             return super().destroy(request, *args, **kwargs)
         except ProtectedError as e:
-            # Aquí personalizas el mensaje que verá el usuario
             return Response(
                 {
                     "error": "No se puede eliminar este producto porque tiene ventas asociadas.",
@@ -80,6 +81,58 @@ class ProductoViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=True, methods=['post'], url_path='ajustar-stock')
+    @transaction.atomic
+    def ajustar_stock(self, request, pk=None):
+        producto = self.get_object()
+        
+        # AQUÍ request.user AHORA SÍ TRAERÁ TU USUARIO REAL GRACIAS A LAS COOKIES
+        usuario_actual = request.user 
+
+        tipo_ajuste = request.data.get('tipo_ajuste')
+        cantidad = request.data.get('cantidad')
+        motivo_detalle = request.data.get('motivo', 'Ajuste manual') 
+
+        if not tipo_ajuste or cantidad is None:
+            return Response({"error": "Faltan datos obligatorios."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            cantidad = int(cantidad)
+            if cantidad <= 0:
+                raise ValueError("La cantidad debe ser mayor a 0.")
+        except ValueError:
+            return Response({"error": "La cantidad debe ser un número entero positivo."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if tipo_ajuste == 'CARGA':
+            cantidad_cambio = cantidad 
+            tipo_movimiento = 'ENTRADA_AJUSTE' 
+            motivo_final = f"Carga de Stock: {motivo_detalle}"
+        elif tipo_ajuste == 'DESCUENTO':
+            cantidad_cambio = -cantidad 
+            tipo_movimiento = 'SALIDA_AJUSTE'
+            motivo_final = f"Descuento por {motivo_detalle}"
+        else:
+            return Response({"error": "El tipo_ajuste debe ser CARGA o DESCUENTO."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            producto.modificar_stock(
+                cantidad_cambio=cantidad_cambio,
+                tipo_movimiento=tipo_movimiento,
+                motivo=motivo_final,
+                usuario=usuario_actual
+            )
+            
+            producto.refresh_from_db()
+            
+            return Response({
+                "mensaje": "Stock actualizado correctamente.",
+                "nuevo_stock": producto.stock_actual
+            }, status=status.HTTP_200_OK)
+
+        except ValidationError as e:
+            mensaje = e.message if hasattr(e, 'message') else e.messages[0]
+            return Response({"error": str(mensaje)}, status=status.HTTP_400_BAD_REQUEST)
 
 # ---------------------------------------------------------
 # 3. GLOBAL SEARCH
@@ -101,7 +154,6 @@ class GlobalSearchView(APIView):
             nombre__icontains=query
         ).only('id', 'nombre')[:3]
 
-        # Como ya no buscamos lotes, podemos subir el límite de productos mostrados a 5 o 6
         productos = Producto.objects.filter(
             Q(nombre__icontains=query) | 
             Q(codigo_serie__icontains=query) 
@@ -120,7 +172,6 @@ class GlobalSearchView(APIView):
             'productos': [{
                 'id': p.id,
                 'titulo': p.nombre,
-                # Ahora el buscador global mostrará cuánto stock queda directamente
                 'subtitulo': f"Precio: ${p.precio_venta} | Stock: {p.stock_actual} | Categoria: {p.categoria__nombre}", 
                 'extra': p.codigo_serie
             } for p in productos],

@@ -21,17 +21,18 @@ export const Navbar = () => {
     const activeIndex = NAV_LINKS.findIndex(link => location.pathname === link.path);
 
     return (
-        <aside className="fixed top-4 left-4 bottom-4 w-64 bg-[#ffffff] text-slate-700 flex flex-col rounded-xl shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] border border-slate-100 z-50">
+        // 👇 CAMBIO PRINCIPAL: top-0, left-0, h-screen, sin bordes redondeados y sombra lateral
+        <aside className="fixed top-0 left-0 h-screen w-64 bg-[#ffffff] text-slate-700 flex flex-col border-r border-slate-200 shadow-[4px_0_24px_0_rgba(0,0,0,0.05)] z-50">
             
             {/* Cabecera del Sidebar */}
-            <div className="h-20 flex items-center justify-center border-b border-slate-100">
+            <div className="h-20 flex items-center justify-center border-b border-slate-100 shrink-0">
                 <span className="text-xl font-extrabold text-slate-800 tracking-tight">
                     jade <span className="text-emerald-500">POS</span>
                 </span>
             </div>
 
             {/* Perfil de Usuario - Estilo Barra Alargada (Pill) */}
-            <div className="px-4 py-5 border-b border-slate-100">
+            <div className="px-4 py-5 border-b border-slate-100 shrink-0">
                 <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 p-1.5 rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.04)] w-full">
                     {/* Avatar circular flotando dentro de la barra hundida */}
                     <div className="w-10 h-10 shrink-0 rounded-full bg-white shadow-sm flex items-center justify-center text-emerald-600 font-bold text-sm">
@@ -72,8 +73,8 @@ export const Navbar = () => {
                                     to={link.path}
                                     className={`flex items-center gap-3 px-4 h-full rounded-xl transition-colors duration-200 ${
                                         isActive 
-                                        ? 'text-emerald-700 font-bold' // El fondo ya no está aquí, lo da la caja que se desliza
-                                        : 'text-slate-500 font-medium hover:text-emerald-600 hover:bg-slate-50 hover:shadow-[inset_0_2px_4px_rgba(0,0,0,0.03)]' // Hover hundido suave
+                                        ? 'text-emerald-700 font-bold' 
+                                        : 'text-slate-500 font-medium hover:text-emerald-600 hover:bg-slate-50 hover:shadow-[inset_0_2px_4px_rgba(0,0,0,0.03)]' 
                                     }`}
                                 >
                                     {Icon && <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />}
@@ -86,7 +87,7 @@ export const Navbar = () => {
             </nav>
 
             {/* Pie del Sidebar */}
-            <div className="p-4 border-t border-slate-100 flex justify-center pb-6">
+            <div className="p-4 border-t border-slate-100 flex justify-center pb-6 shrink-0">
                 <LogoutButton/>
             </div>
         </aside>

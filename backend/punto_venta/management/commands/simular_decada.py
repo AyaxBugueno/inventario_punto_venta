@@ -4,32 +4,68 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.db import transaction
 from django.contrib.auth import get_user_model
-# Asegúrate de importar el Kardex aquí
 from modulo_principal.models import Producto, MovimientoKardex 
 from punto_venta.models import Venta, DetalleVenta, SesionCaja
 
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Simula 10 años de historial forzando horas exactas y rellenando el Kardex.'
+    help = 'Simula 1 año de historial de cajas/ventas y garantiza 26+ movimientos de Kardex por producto para probar paginación.'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.WARNING('🔥 INICIANDO STRESS TEST: 10 AÑOS - FECHAS BULLETPROOF & KARDEX'))
+        self.stdout.write(self.style.WARNING('🔥 INICIANDO STRESS TEST: 1 AÑO & 26+ KARDEX POR PRODUCTO GARANTIZADOS'))
 
         usuario = User.objects.first()
         productos = list(Producto.objects.all())
         
         if not productos or not usuario:
-            self.stdout.write(self.style.ERROR('Error: Necesitas al menos un usuario y productos.'))
+            self.stdout.write(self.style.ERROR('Error: Necesitas al menos un usuario y productos registrados.'))
             return
 
-        DIAS_TOTALES = 365 * 10 
         ahora = timezone.now()
 
-        # Procesamos mes a mes para proteger la memoria de la RAM
-        for mes_atras in range(120, -1, -1):
+        # =========================================================
+        # FASE 1: GARANTIZAR 26 MOVIMIENTOS POR PRODUCTO (Para UI)
+        # =========================================================
+        self.stdout.write('Inyectando 26 movimientos base por producto para asegurar la paginación (3 páginas)...')
+        kardex_base = []
+        
+        with transaction.atomic():
+            for p in productos:
+                stock_ficticio = 100
+                for i in range(26):
+                    # Distribuimos aleatoriamente estos 26 registros en los últimos 360 días
+                    dias_atras = random.randint(1, 360)
+                    fecha_mov = ahora - timedelta(days=dias_atras, hours=random.randint(1, 23), minutes=random.randint(0, 59))
+                    
+                    es_entrada = random.choice([True, False])
+                    cant = random.randint(1, 5)
+                    nuevo_stock = stock_ficticio + cant if es_entrada else stock_ficticio - cant
+                    
+                    kardex_base.append(MovimientoKardex(
+                        producto=p,
+                        usuario=usuario,
+                        tipo_movimiento='ENTRADA_AJUSTE' if es_entrada else 'SALIDA_AJUSTE',
+                        cantidad=cant,
+                        stock_anterior=stock_ficticio,
+                        stock_nuevo=nuevo_stock,
+                        motivo=f"Ajuste automático para paginación #{i+1}",
+                        fecha=fecha_mov
+                    ))
+                    stock_ficticio = nuevo_stock
+                    
+            # bulk_create inserta miles de registros en SQLite en una sola pasada de disco (amigable con HDD)
+            MovimientoKardex.objects.bulk_create(kardex_base)
+            
+        self.stdout.write(self.style.SUCCESS(f'✅ {len(kardex_base)} movimientos base inyectados correctamente.'))
+
+        # =========================================================
+        # FASE 2: GENERAR 1 AÑO DE CAJAS Y VENTAS (Realismo)
+        # =========================================================
+        DIAS_TOTALES = 365
+        for mes_atras in range(11, -1, -1):
             fecha_referencia = ahora - timedelta(days=mes_atras * 30)
-            self.stdout.write(f'Generando datos exactos para: {fecha_referencia.strftime("%B %Y")}...')
+            self.stdout.write(f'Generando ventas y cajas para: {fecha_referencia.strftime("%B %Y")}...')
             
             with transaction.atomic():
                 for d in range(30):
@@ -48,17 +84,14 @@ class Command(BaseCommand):
                     hora_apertura = timezone.make_aware(timezone.datetime(fecha_dia.year, fecha_dia.month, fecha_dia.day, 8, 30, 0))
                     SesionCaja.objects.filter(id=caja.id).update(fecha_apertura=hora_apertura)
 
-                    # 2. Generar entre 15 y 35 ventas diarias
-                    ventas_del_dia = random.randint(15, 35)
+                    # 2. Generar entre 3 y 8 ventas diarias para no saturar SQLite pero dar continuidad
+                    ventas_del_dia = random.randint(3, 8)
                     
                     for _ in range(ventas_del_dia):
-                        # 🕒 MAGIA DE HORARIOS
                         hora_v = random.randint(9, 21) 
                         min_v = random.randint(0, 59)
-                        seg_v = random.randint(0, 59)
-                        momento_venta = timezone.make_aware(timezone.datetime(fecha_dia.year, fecha_dia.month, fecha_dia.day, hora_v, min_v, seg_v))
+                        momento_venta = timezone.make_aware(timezone.datetime(fecha_dia.year, fecha_dia.month, fecha_dia.day, hora_v, min_v, 0))
 
-                        # Creamos la venta vacía
                         venta = Venta.objects.create(
                             usuario=usuario,
                             sesion=caja,
@@ -66,10 +99,9 @@ class Command(BaseCommand):
                             total=0 
                         )
 
-                        # Agregamos los productos y sus movimientos de Kardex
                         total_v = 0
                         detalles = []
-                        kardex_list = [] # 🚀 Lista para inserción masiva del Kardex
+                        kardex_ventas = [] 
                         
                         items = random.sample(productos, random.randint(1, 3))
                         for p in items:
@@ -82,10 +114,9 @@ class Command(BaseCommand):
                                 precio_unitario=p.precio_venta, subtotal=sub
                             ))
 
-                            # Generamos un stock previo ficticio coherente para que la tabla en React se vea real
                             stock_previo_ficticio = random.randint(cant, 100) 
 
-                            kardex_list.append(MovimientoKardex(
+                            kardex_ventas.append(MovimientoKardex(
                                 producto=p,
                                 usuario=usuario,
                                 tipo_movimiento='SALIDA_VENTA',
@@ -93,14 +124,11 @@ class Command(BaseCommand):
                                 stock_anterior=stock_previo_ficticio,
                                 stock_nuevo=stock_previo_ficticio - cant,
                                 motivo=f"Venta Simulada #{str(venta.id)[:8]}",
-                                fecha=momento_venta # bulk_create respeta este campo si lo pasamos directo
+                                fecha=momento_venta 
                             ))
                         
-                        # Inyecciones masivas (Evita hacer cientos de miles de queries individuales)
                         DetalleVenta.objects.bulk_create(detalles)
-                        MovimientoKardex.objects.bulk_create(kardex_list)
-
-                        # Obligamos a la BD a reescribir la fecha y el total real de la venta
+                        MovimientoKardex.objects.bulk_create(kardex_ventas)
                         Venta.objects.filter(id=venta.id).update(fecha=momento_venta, total=total_v)
 
-        self.stdout.write(self.style.SUCCESS('✅ ¡STRESS TEST PERFECTO! Las horas y el Kardex están distribuidos correctamente.'))
+        self.stdout.write(self.style.SUCCESS('✅ ¡STRESS TEST FINALIZADO! Tienes 1 año de cajas y +26 Kardex por producto garantizados.'))

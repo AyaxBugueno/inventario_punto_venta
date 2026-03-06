@@ -13,6 +13,10 @@ export const productoService = {
         });
         return response.data;
     },
+    ajustarStock: async (id: number, payload: { tipo_ajuste: string; cantidad: number; motivo: string }) => {
+        const { data } = await api.post(`/productos/${id}/ajustar-stock/`, payload);
+        return data;
+    },
 
     getById: async (id: number): Promise<Producto> => {
         const response = await api.get(`${URL_BASE}${id}/`);

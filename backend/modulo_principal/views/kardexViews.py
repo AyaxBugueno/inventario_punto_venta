@@ -1,6 +1,10 @@
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import AllowAny, IsAuthenticated # Cambiar a IsAuthenticated en producción
+
+# 👇 IMPORTAMOS TU PAGINADOR CENTRALIZADO
+from modulo_principal.utils.pagination import EstándarPagination
+
 from ..models.kardex import MovimientoKardex
 from ..serializers import MovimientoKardexSerializer # Ajusta tu import según tu estructura
 
@@ -11,10 +15,13 @@ class MovimientoKardexViewSet(viewsets.ReadOnlyModelViewSet):
     """
     permission_classes = [AllowAny]
     authentication_classes = []
+    
     # Usamos select_related para evitar el problema de N+1 queries. 
-    # Si cargas 100 movimientos, Django hará 1 sola consulta SQL en vez de 101.
     queryset = MovimientoKardex.objects.select_related('producto', 'usuario').all()
     serializer_class = MovimientoKardexSerializer
+    
+    # 👇 APLICAMOS EL PAGINADOR EXPLÍCITAMENTE PARA ASEGURAR EL OBJETO {count, results} EN REACT
+    pagination_class = EstándarPagination
     
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     

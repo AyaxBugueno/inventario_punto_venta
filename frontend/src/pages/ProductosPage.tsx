@@ -14,6 +14,8 @@ import { type Producto } from '../domain/models/Producto';
 import { categoriaService } from '../services/categoria.service';
 // Importamos el nuevo Organismo del Kardex
 import { KardexModal } from '../components/organisms/Kardex/Kardex';
+import { AjusteStockModal } from '../components/molecules/AjustarStockModal/AjustarStockModal';
+
 
 const ProductosPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -27,7 +29,7 @@ const ProductosPage = () => {
     // 3. HOOK DE PRODUCTOS (Recibe filtros)
     const {
         productos, loading, error, pagination,
-        crearProducto, eliminarProducto, actualizarProducto, clearError,
+        crearProducto, eliminarProducto, actualizarProducto, clearError,refetch
     } = useProductos(currentFilters);
 
     // Estados del Modal de Formulario (Crear/Editar)
@@ -40,6 +42,14 @@ const ProductosPage = () => {
     // ==========================================
     const [isKardexOpen, setIsKardexOpen] = useState(false);
     const [selectedProductKardex, setSelectedProductKardex] = useState<Producto | null>(null);
+
+    const [isAjusteStockOpen, setIsAjusteStockOpen] = useState(false);
+    const [productoParaAjuste, setProductoParaAjuste] = useState<Producto | null>(null);
+
+    const handleOpenAjusteStock = (producto: Producto) => {
+        setProductoParaAjuste(producto);
+        setIsAjusteStockOpen(true);
+    };
 
     // 4. EFECTO PARA CARGAR CATEGORÍAS
     useEffect(() => {
@@ -219,7 +229,8 @@ const ProductosPage = () => {
                             data={productos}
                             onDelete={eliminarProducto}
                             onEdit={handleEdit}
-                            onViewKardex={handleViewKardex} // Pasamos el handler aquí
+                            onViewKardex={handleViewKardex}
+                            onAjustarStock={handleOpenAjusteStock} // Pasamos el handler aquí
                         />
 
                         <div className="mt-4">
@@ -262,6 +273,15 @@ const ProductosPage = () => {
                     productoId={selectedProductKardex?.id || null}
                     productoNombre={selectedProductKardex?.nombre || ''}
                 />
+                <AjusteStockModal 
+                isOpen={isAjusteStockOpen}
+                onClose={() => setIsAjusteStockOpen(false)}
+                producto={productoParaAjuste}
+                onSuccess={() => {
+                    
+                    refetch(); 
+                }}
+/>
 
             </div>
         </MainTemplate>
