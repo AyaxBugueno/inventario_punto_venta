@@ -13,6 +13,15 @@ export const productoService = {
         });
         return response.data;
     },
+    buscarParaPOS: async (query: string): Promise<Producto[]> => {
+        if (!query || query.length < 2) return [];
+        
+        // Llama al nuevo endpoint de Django que creamos antes
+        const response = await api.get(`${URL_BASE}buscar-pos/`, {
+            params: { q: query }
+        });
+        return response.data;
+    },
     ajustarStock: async (id: number, payload: { tipo_ajuste: string; cantidad: number; motivo: string }) => {
         const { data } = await api.post(`/productos/${id}/ajustar-stock/`, payload);
         return data;

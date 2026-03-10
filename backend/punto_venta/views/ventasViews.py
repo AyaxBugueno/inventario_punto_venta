@@ -83,17 +83,18 @@ class VentaViewSet(viewsets.ModelViewSet):
                 prod_id = item.get('producto_id')
                 cantidad_solicitada = int(item.get('cantidad', 1))
 
-                # Bloqueo a nivel de BD para evitar colisiones si 2 cajeros venden lo mismo
+                # Bloqueo a nivel de BD para evitar colisiones
                 producto = Producto.objects.select_for_update().get(id=prod_id)
 
-                # ==========================================
+                # 🚨 NUEVA DEFENSA: Evitar venta de inactivos
+                if not producto.activo:
+                    raise ValidationError(f"El producto '{producto.nombre}' (SKU: {producto.codigo_serie}) está inactivo y no puede ser vendido.")
+
                 # 🚀 LA MAGIA: DELEGAMOS AL KARDEX
-                # ==========================================
-                # El método modificar_stock lanzará ValidationError si no hay stock suficiente
                 producto.modificar_stock(
-                    cantidad_cambio=-cantidad_solicitada, # Negativo porque es venta
+                    cantidad_cambio=-cantidad_solicitada, 
                     tipo_movimiento='SALIDA_VENTA',
-                    motivo=f"Venta POS - Ticket #{str(venta.id)[:8]}", # Trazabilidad perfecta
+                    motivo=f"Venta POS - Ticket #{str(venta.id)[:8]}", 
                     usuario=usuario_actual
                 )
 

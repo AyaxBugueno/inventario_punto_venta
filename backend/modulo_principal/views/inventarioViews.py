@@ -133,6 +133,37 @@ class ProductoViewSet(viewsets.ModelViewSet):
         except ValidationError as e:
             mensaje = e.message if hasattr(e, 'message') else e.messages[0]
             return Response({"error": str(mensaje)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(detail=False, methods=['get'], url_path='buscar-pos', pagination_class=None)
+    def buscar_para_venta(self, request):
+        """
+        Endpoint optimizado para POS.
+        Prioriza la búsqueda exacta (Escáner) en 1 milisegundo.
+        """
+        q = request.query_params.get('q', '').strip()
+        
+        if not q:
+            return Response([])
+
+        # 1. RUTA RÁPIDA (ESCÁNER): Coincidencia exacta
+        exact_match = list(Producto.objects.filter(
+            activo=True, 
+            stock_actual__gt=0, 
+            codigo_serie=q
+        ).values('id', 'nombre', 'codigo_serie', 'precio_venta', 'stock_actual')[:1])
+        
+        if exact_match:
+            return Response(exact_match)
+            
+        # 2. RUTA LENTA (TECLADO): Si no es exacto, busca en Nombre o Código Parcial
+        # 🔥 CLAVE: Agregado Q(codigo_serie__icontains=q) para que se comporte igual que tu antiguo buscador
+        name_match = list(Producto.objects.filter(
+            Q(nombre__icontains=q) | Q(codigo_serie__icontains=q),
+            activo=True, 
+            stock_actual__gt=0
+        ).values('id', 'nombre', 'codigo_serie', 'precio_venta', 'stock_actual')[:10])
+        
+        return Response(name_match)
 
 # ---------------------------------------------------------
 # 3. GLOBAL SEARCH

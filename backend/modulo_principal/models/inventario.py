@@ -53,11 +53,9 @@ class Producto(models.Model):
         # 1. Guardar el nuevo stock
         self.stock_actual = nuevo_stock
         
-        # Activar o desactivar automáticamente
+        # 🚨 CORRECCIÓN: Solo lo desactivamos si llega a 0. NUNCA lo reactivamos automáticamente.
         if self.stock_actual <= 0 and self.activo:
             self.activo = False
-        elif self.stock_actual > 0 and not self.activo:
-            self.activo = True
             
         self.save(update_fields=['stock_actual', 'activo'])
 

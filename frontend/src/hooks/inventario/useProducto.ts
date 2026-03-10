@@ -2,16 +2,22 @@ import { useState, useEffect, useCallback } from 'react';
 import { type Producto } from '../../domain/models/Producto';
 import { productoService } from '../../services/producto.service';
 import axios from 'axios';
+import { useProductStore } from '../../store/useProductStore'; // <-- NUEVO
+
+
 
 // 1. Aceptamos los filtros como argumento opcional
 export const useProductos = (filters: Record<string, any> = {}) => {
     const [productos, setProductos] = useState<Producto[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [globalError, setGlobalError] = useState<string | null>(null);
+    const { upsertProduct } = useProductStore();
 
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const PAGE_SIZE = 10;
+
+    
 
     // 🔥 SOLUCIÓN: Creamos una "firma" de texto de los filtros para comparar contenido, no referencias.
     const filtersString = JSON.stringify(filters);
@@ -55,13 +61,19 @@ export const useProductos = (filters: Record<string, any> = {}) => {
 
     const crearProducto = async (prod: Producto) => {
         try {
-            await productoService.create(prod);
-            // Re-fetech para asegurar que el ordenamiento del backend (sanos primero) se mantenga
+            // 1. Llamamos a Django
+            const nuevoProducto = await productoService.create(prod); 
+            
+            // 2. Sincronizamos con el Store del POS al instante
+            upsertProduct(nuevoProducto); 
+
+            // 3. Refrescamos la tabla del maestro de productos
             await fetchProductos(page, filters);
             return true;
         } catch (err) {
-            if (axios.isAxiosError(err) && err.response?.status === 400){
-                throw err; // El Formulario se encarga de mostrar estos errores
+            // Manejo de errores de validación de Django (400 Bad Request)
+            if (axios.isAxiosError(err) && err.response?.status === 400) {
+                throw err; 
             }
             setGlobalError('Error crítico al crear el producto');
             throw err;
@@ -71,16 +83,19 @@ export const useProductos = (filters: Record<string, any> = {}) => {
     const actualizarProducto = async (id: number, prod: Producto) => {
         setLoading(true);
         try {
-            await productoService.update(id, prod);
-            // CORRECCIÓN: Usamos 'page' y 'filters' que viven dentro de este hook
+            // 1. Llamamos a Django
+            const productoActualizado = await productoService.update(id, prod);
+            
+            // 2. Sincronizamos la memoria del POS
+            upsertProduct(productoActualizado);
+
+            // 3. Refrescamos la tabla local
             await fetchProductos(page, filters);
             return true;
         } catch (err: any) {
             if (err.response?.status === 400) {
                 throw err; 
             }
-            
-            // CORRECCIÓN: Usamos 'setGlobalError', que es el estado real de tu hook
             setGlobalError('Error crítico al actualizar el producto');
             throw err;
         } finally {

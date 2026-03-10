@@ -1,14 +1,21 @@
-// src/pages/POSPage.tsx
 import { useState } from 'react';
 import { POSTemplate } from '../components/templates/PosTemplate';
 import { ProductFinder } from '../components/molecules/ProductFinder';
 import { SaleTable } from '../components/organisms/SaleTable';
-import { useCart } from '../hooks/pos/useCart';
 import { ventaService } from '../services/venta.service';
-import { Banknote, CreditCard, Landmark, ShoppingCart } from 'lucide-react'; // Iconos para los métodos de pago
+import { Banknote, CreditCard, Landmark, ShoppingCart } from 'lucide-react';
+
+// Importamos el store global de Zustand
+import { useCartStore } from '../store/useCartStore';
 
 const POSPage = () => {
-    const { cartItems, cartTotal, addToCart, removeFromCart, clearCart } = useCart();
+    // Selectores de Zustand (Mejor rendimiento, evita re-renders innecesarios)
+    const cartItems = useCartStore((state) => state.cartItems);
+    const cartTotal = useCartStore((state) => state.cartTotal);
+    const addToCart = useCartStore((state) => state.addToCart);
+    const removeFromCart = useCartStore((state) => state.removeFromCart);
+    const clearCart = useCartStore((state) => state.clearCart);
+
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('EFECTIVO');
 
@@ -53,7 +60,7 @@ const POSPage = () => {
                     <h2 className="text-xl font-bold text-slate-800 tracking-tight">Resumen de Venta</h2>
                 </div>
                 
-                {/* Selector Método Pago con Diseño Premium */}
+                {/* Selector Método Pago */}
                 <div className="mb-8">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">
                         Método de Pago
@@ -69,34 +76,29 @@ const POSPage = () => {
                             <option value="CREDITO">Tarjeta de Crédito</option>
                             <option value="TRANSFERENCIA">Transferencia</option>
                         </select>
-                        {/* Icono dinámico según el método */}
                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                             {paymentMethod === 'EFECTIVO' && <Banknote size={18} />}
                             {(paymentMethod === 'DEBITO' || paymentMethod === 'CREDITO') && <CreditCard size={18} />}
                             {paymentMethod === 'TRANSFERENCIA' && <Landmark size={18} />}
                         </div>
-                        {/* Flecha del select */}
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                             <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                         </div>
                     </div>
                 </div>
 
-                {/* Subtotales (Preparando el terreno para el IVA después) */}
+                {/* Subtotales */}
                 <div className="space-y-3 px-2">
                     <div className="flex justify-between items-center text-sm font-medium text-slate-500">
                         <span>Total Ítems:</span>
                         <span className="text-slate-800 bg-slate-100 px-2 py-0.5 rounded">{cartItems.length}</span>
                     </div>
-                    {/* Aquí en el futuro puedes poner el Neto y el IVA antes del total final */}
                 </div>
             </div>
 
             {/* Parte Inferior (Total y Botón) */}
             <div className="mt-auto pt-6">
-                {/* Display del Gran Total (Estilo Pantalla Digital) */}
                 <div className="bg-slate-800 p-5 rounded-2xl shadow-lg mb-6 relative overflow-hidden">
-                    {/* Decoración de fondo */}
                     <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none"></div>
                     
                     <span className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total a Pagar</span>
@@ -106,7 +108,6 @@ const POSPage = () => {
                     </span>
                 </div>
 
-                {/* Botón de Confirmación Masivo */}
                 <button 
                     onClick={handleProcessSale}
                     disabled={cartItems.length === 0 || isProcessing}

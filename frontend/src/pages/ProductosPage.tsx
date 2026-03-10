@@ -262,6 +262,7 @@ const ProductosPage = () => {
                             onSubmit={handleSubmit}
                             initialData={editingProd}
                             onCancel={handleCloseModal}
+                            categorias={categorias}
                         />
                     )}
                 </Modal>

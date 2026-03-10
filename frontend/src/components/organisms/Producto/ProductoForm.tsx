@@ -6,11 +6,10 @@ interface Props {
     onSubmit: (producto: Producto) => Promise<void | any>;
     initialData?: Producto | null;
     onCancel?: () => void;
+    categorias: Categoria[]; // 👈 NUEVO: Recibimos las categorías desde la página principal
 }
 
-export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
-
-    const [categorias, setCategorias] = useState<Categoria[]>([]);
+export const ProductoForm = ({ onSubmit, initialData, onCancel, categorias }: Props) => {
 
     const initialState: Producto = {
         nombre: '',
@@ -27,28 +26,15 @@ export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string[]>>({});
 
-    useEffect(() => {
-        const fetchCategorias = async () => {
-            try {
-                // Se agrega http:// para evitar que el navegador lo tome como ruta relativa
-                const response = await axios.get('http://127.0.0.1:8000/api/categorias/'); 
-                
-                // Validación estricta para evitar que .map() rompa la pantalla
-                const data = response.data;
-                const listaCategorias = Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : []);
-                
-                setCategorias(listaCategorias);
-            } catch (error) {
-                console.error("Error cargando categorías", error);
-                setCategorias([]); // En caso de error, inicializa como arreglo vacío
-            }
-        };
-        fetchCategorias();
-    }, []);
-
+    // 🔥 MAGIA AQUÍ: Cuando llega la data para editar, nos aseguramos de atrapar el ID 
+    // sin importar si Django lo mandó como 'categoria_id' o 'categoria'.
     useEffect(() => {
         if (initialData) {
-            setForm(initialData);
+            setForm({
+                ...initialData,
+                // Usamos as any temporalmente por si tu interfaz Producto no tiene 'categoria' definida
+                categoria_id: initialData.categoria_id || (initialData as any).categoria || '',
+            });
         } else {
             setForm(initialState);
         }
@@ -119,13 +105,13 @@ export const ProductoForm = ({ onSubmit, initialData, onCancel }: Props) => {
                     </div>
                 )}
 
-                {/* FILA 1: Categoría (Ocupa todo el ancho por importancia) */}
+                {/* FILA 1: Categoría */}
                 <div className="grid grid-cols-1 gap-4">
                     <div> 
                         <label className="block text-sm font-semibold text-slate-700 mb-1">Categoría *</label>
                         <select
                             className={inputClass('categoria_id')}
-                            value={form.categoria_id}
+                            value={form.categoria_id || ''} // 👈 Fallback a '' para evitar undefined
                             onChange={e => handleChange('categoria_id', Number(e.target.value))}
                             required
                         >

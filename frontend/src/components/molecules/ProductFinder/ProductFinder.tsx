@@ -1,8 +1,7 @@
 // src/components/molecules/ProductFinder.tsx
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { useProductos } from '../../../hooks/inventario/useProducto';
+import { useState, useRef, useEffect } from 'react';
 import { type Producto } from '../../../domain/models/Producto';
-import { useDebounce } from '../../../hooks/Debounce/useDebounce';
+import { useProductStore } from '../../../store/useProductStore';
 import { ScanLine, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface Props {
@@ -10,42 +9,75 @@ interface Props {
 }
 
 export const ProductFinder = ({ onProductSelected }: Props) => {
+    // Solo guardamos lo que el usuario digita y la cantidad
     const [query, setQuery] = useState('');
     const [qty, setQty] = useState(1);
     
-    const debouncedQuery = useDebounce(query, 500);
-
-    const searchFilters = useMemo(() => {
-        if (!debouncedQuery || debouncedQuery.length < 2) return { search: '' };
-        return { search: debouncedQuery };
-    }, [debouncedQuery]);
-    
-    const { productos, loading } = useProductos(searchFilters);
+    // Nos conectamos directo al Store Global
+    const { buscarLocal, isLoading, cargarCatalogoLocal } = useProductStore();
 
     const inputRef = useRef<HTMLInputElement>(null);
     const qtyRef = useRef<HTMLInputElement>(null);
 
+    // Cargamos el catálogo la primera vez que se abre el POS
     useEffect(() => {
+        cargarCatalogoLocal();
         inputRef.current?.focus();
-    }, []);
+    }, [cargarCatalogoLocal]);
 
-    const stagedProduct = query && productos.length > 0 ? productos[0] : null;
+    // 🔥 ESTADO DERIVADO (La solución al Bug):
+    // Como el diccionario es O(1), calculamos el resultado al instante en cada render.
+    // Sin retrasos, sin useEffects, sin desincronizaciones.
+    const coincidencias = query.trim().length >= 2 ? buscarLocal(query) : [];
+    const stagedProduct = coincidencias.length > 0 ? coincidencias[0] : null;
 
+    // 2. LA MAGIA: El manejador a prueba de velocidad
     const handleKeyDown = (e: React.KeyboardEvent, target: 'search' | 'qty') => {
         if (e.key === 'Enter') {
-            if (target === 'search' && stagedProduct) {
-                qtyRef.current?.focus();
-                qtyRef.current?.select();
-            } else if (target === 'qty' && stagedProduct) {
-                onProductSelected(stagedProduct, qty);
-                setQuery('');
-                setQty(1);
-                inputRef.current?.focus();
+            e.preventDefault();
+
+            if (target === 'search') {
+                // BYPASS: Leemos el valor REAL e instantáneo del HTML, no el estado de React que podría venir desfasado
+                const realValue = inputRef.current?.value.trim() || '';
+                
+                // Hacemos una búsqueda forzada con ese valor real
+                const instantMatches = realValue.length >= 2 ? buscarLocal(realValue) : [];
+                const instantProduct = instantMatches.length > 0 ? instantMatches[0] : null;
+
+                if (instantProduct) {
+                    setQuery(realValue); // Obligamos a React a actualizarse al valor real
+                    qtyRef.current?.focus();
+                    qtyRef.current?.select();
+                }
+            } 
+            else if (target === 'qty') {
+                // Recuperamos el producto ya sea del estado o forzando la búsqueda de nuevo
+                const realValue = inputRef.current?.value.trim() || '';
+                const instantMatches = realValue.length >= 2 ? buscarLocal(realValue) : [];
+                const productToAdd = instantMatches.length > 0 ? instantMatches[0] : stagedProduct;
+
+                if (productToAdd) {
+                    // 1. Agregamos al carrito
+                    onProductSelected(productToAdd, qty);
+                    
+                    // 2. LIMPIEZA EXTREMA: Vaciamos el DOM directamente para que no haya choques
+                    if (inputRef.current) inputRef.current.value = '';
+                    
+                    // 3. Limpiamos el estado de React
+                    setQuery('');
+                    setQty(1);
+                    
+                    // 4. Devolvemos el foco listo para el siguiente disparo
+                    inputRef.current?.focus();
+                }
             }
         }
     };
 
     const baseInputStyles = "w-full bg-slate-50 border border-slate-200 p-4 rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] focus:ring-2 focus:ring-emerald-100 focus:border-emerald-400 focus:shadow-none outline-none transition-all text-slate-800 text-lg font-medium";
+
+    // El error solo se muestra si escribiste 2+ letras, ya terminó de cargar, y el diccionario O(1) no encontró nada.
+    const showError = !isLoading && query.trim().length >= 2 && !stagedProduct;
 
     return (
         <div className="bg-white p-6 rounded-xl shadow-[0_4px_24px_0_rgba(0,0,0,0.06)] border border-slate-100 mb-6">
@@ -90,28 +122,28 @@ export const ProductFinder = ({ onProductSelected }: Props) => {
             <div className={`mt-4 rounded-xl border transition-all duration-300 overflow-hidden ${
                 stagedProduct 
                 ? 'bg-emerald-50/50 border-emerald-200' 
-                : query ? 'bg-red-50/50 border-red-200' : 'bg-slate-50 border-slate-100'
+                : showError ? 'bg-red-50/50 border-red-200' : 'bg-slate-50 border-slate-100'
             }`}>
                 <div className="p-4 min-h-[84px] flex items-center">
-                    {loading && (
+                    {isLoading && (
                         <div className="flex items-center gap-3 text-slate-500">
                             <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                            <span className="font-medium text-sm">Buscando en catálogo...</span>
+                            <span className="font-medium text-sm">Cargando catálogo en memoria...</span>
                         </div>
                     )}
                     
-                    {!loading && !stagedProduct && query && (
+                    {showError && (
                         <div className="flex items-center gap-2 text-red-500">
                             <AlertCircle size={20} />
-                            <span className="font-bold text-sm">Producto no encontrado en la base de datos.</span>
+                            <span className="font-bold text-sm">Producto no encontrado en el sistema.</span>
                         </div>
                     )}
 
-                    {!loading && !query && (
+                    {!isLoading && !query && (
                         <p className="text-slate-400 text-sm italic">El producto escaneado aparecerá aquí...</p>
                     )}
 
-                    {stagedProduct && !loading && (
+                    {stagedProduct && !isLoading && (
                         <div className="flex justify-between items-center w-full">
                             <div className="flex items-center gap-4">
                                 <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600">
@@ -121,7 +153,7 @@ export const ProductFinder = ({ onProductSelected }: Props) => {
                                     <h3 className="text-lg font-bold text-slate-800 leading-tight">{stagedProduct.nombre}</h3>
                                     <p className="text-sm text-slate-500 mt-1">
                                         <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 text-xs mr-2">{stagedProduct.codigo_serie}</span>
-                                        Stock disponible: <span className="font-bold text-slate-700">{stagedProduct.stock_actual}</span>
+                                        Stock: <span className="font-bold text-slate-700">{stagedProduct.stock_actual}</span>
                                     </p>
                                 </div>
                             </div>

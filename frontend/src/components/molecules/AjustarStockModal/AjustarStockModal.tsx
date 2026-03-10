@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, ArrowDownCircle, ArrowUpCircle, Package, AlertCircle, Save } from 'lucide-react';
 import { type Producto } from '../../../domain/models/Producto';
 import { productoService } from '../../../services/producto.service'; // Ajusta tu ruta
+import { useProductStore } from '../../../store/useProductStore'; // <-- NUEVO
 
 interface Props {
     isOpen: boolean;
@@ -17,6 +18,8 @@ export const AjusteStockModal = ({ isOpen, onClose, producto, onSuccess }: Props
     const [motivo, setMotivo] = useState<string>('Carga manual de stock');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const { upsertProduct } = useProductStore();
 
     // Opciones predefinidas para cuando es Descuento
     const opcionesDescuento = [
@@ -56,15 +59,19 @@ export const AjusteStockModal = ({ isOpen, onClose, producto, onSuccess }: Props
         setError(null);
 
         try {
-            await productoService.ajustarStock(producto.id!, {
+            // 1. Capturamos el producto devuelto por Django con el stock ya calculado
+            const productoConNuevoStock = await productoService.ajustarStock(producto.id!, {
                 tipo_ajuste: tipoAjuste,
                 cantidad: Number(cantidad),
                 motivo: motivo
             });
-            onSuccess(); // Recarga la tabla de productos
+            
+            // 2. 🔥 Sincronizamos la memoria del POS para que el cajero vea el stock real
+            upsertProduct(productoConNuevoStock);
+
+            onSuccess(); // Recarga la tabla
             onClose();   // Cierra el modal
         } catch (err: any) {
-            // Mostrar error del backend (ej: "Stock negativo no permitido")
             setError(err.response?.data?.error || 'Ocurrió un error al ajustar el stock.');
         } finally {
             setLoading(false);
