@@ -45,7 +45,7 @@ export const CategoriaTable = ({ data, onDelete, onEdit }: Props) => {
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                         ${cat.activo 
-                                            ? 'bg-green-100 text-green-800 border border-green-400' 
+                                            ? 'bg-green-100 text-green-800 border border-green-200' 
                                             : 'bg-red-100 text-red-800'}`
                                     }>
                                         {cat.activo ? 'Activa' : 'Inactiva'}

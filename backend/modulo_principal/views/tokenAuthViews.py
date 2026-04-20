@@ -8,6 +8,8 @@ from rest_framework.permissions import AllowAny
 
 
 class CookieTokenObtainPairView(TokenObtainPairView):
+    permission_classes =[AllowAny]
+
     def post(self, request, *args, **kwargs):
 
         response = super().post(request, *args, **kwargs)
@@ -21,7 +23,6 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             response.set_cookie(
                 key=settings.AUTH_COOKIE,
                 value=access_token,
-                domain="127.0.0.1",
                 httponly=settings.AUTH_COOKIE_HTTP_ONLY,
                 secure=settings.AUTH_COOKIE_SECURE,
                 samesite=settings.AUTH_COOKIE_SAMESITE,
@@ -31,7 +32,6 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             response.set_cookie(
                 key=settings.AUTH_COOKIE_REFRESH,
                 value=refresh_token,
-                domain="127.0.0.1",
                 httponly=settings.AUTH_COOKIE_HTTP_ONLY,
                 secure=settings.AUTH_COOKIE_SECURE,
                 samesite=settings.AUTH_COOKIE_SAMESITE,
@@ -51,6 +51,8 @@ class CookieTokenObtainPairView(TokenObtainPairView):
 
 
 class CookieTokenRefreshView(TokenRefreshView):
+    permission_classes =[AllowAny]
+
     def post(self, request, *args, **kwargs):
       
         refresh_token = request.COOKIES.get(settings.AUTH_COOKIE_REFRESH)
@@ -81,12 +83,23 @@ class CookieTokenRefreshView(TokenRefreshView):
         response.set_cookie(
             key=settings.AUTH_COOKIE,
             value=access_token,
-            domain="127.0.0.1", 
             httponly=settings.AUTH_COOKIE_HTTP_ONLY,
             secure=settings.AUTH_COOKIE_SECURE,
             samesite=settings.AUTH_COOKIE_SAMESITE,
             path=settings.AUTH_COOKIE_PATH,
         )
+
+        # Si se rotó el refresh token, actualizar la cookie
+        if 'refresh' in serializer.validated_data:
+            refresh_token = serializer.validated_data.get('refresh')
+            response.set_cookie(
+                key=settings.AUTH_COOKIE_REFRESH,
+                value=refresh_token,
+                httponly=settings.AUTH_COOKIE_HTTP_ONLY,
+                secure=settings.AUTH_COOKIE_SECURE,
+                samesite=settings.AUTH_COOKIE_SAMESITE,
+                path=settings.AUTH_COOKIE_PATH
+            )
 
         
         del response.data['access']

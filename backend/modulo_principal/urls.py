@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UsuarioViewSet, ProductoViewSet, GlobalSearchView,CategoriaViewSet,MovimientoKardexViewSet
+from .views import UsuarioViewSet, ProductoViewSet,CategoriaViewSet,MovimientoKardexViewSet
 
 
 router = DefaultRouter()
@@ -16,5 +16,4 @@ router.register(r'kardex',MovimientoKardexViewSet,basename = 'kardex')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('global-search/',GlobalSearchView.as_view(), name='global-search')
 ]

@@ -17,7 +17,10 @@ function App() {
     try {
       const userData = await authService.checkAuth();
       setUser(userData);
-
+      const displayName = userData.username || userData.first_name || userData.email;
+      if (displayName) {
+        localStorage.setItem('username', displayName);
+      }
     }catch (error) {
       setUser(null);
     }
@@ -29,11 +32,13 @@ function App() {
       try {
         const userData = await authService.checkAuth();
         setUser(userData);
+        const displayName = userData.username || userData.first_name || userData.email;
+        if (displayName) {
+          localStorage.setItem('username', displayName);
+        }
       } catch (error) {
-        
         setUser(null);
       } finally {
-        
         setIsLoading(false);
       }
     };

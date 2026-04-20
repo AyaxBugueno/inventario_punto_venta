@@ -1,30 +1,25 @@
 from rest_framework import viewsets
-from ..models import UsuarioCustom
-from ..serializers import UsuarioListaSerializer, UsuarioRegistroSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
+
+from modulo_principal.models import UsuarioCustom
+from modulo_principal.serializers import UsuarioListaSerializer
+from modulo_principal.services.usuarioservices.usuarioservices import UsuarioService
 
 
 class UsuarioViewSet(viewsets.ModelViewSet):
-
-    permission_classes = [AllowAny]#quitar en produccion
-    authentication_classes = []#quitar en produccion
-
+    permission_classes = [AllowAny]
+    authentication_classes = []
     queryset = UsuarioCustom.objects.all()
     pagination_class = None
 
     def get_serializer_class(self):
-        
-        if self.action == 'create':
-            return UsuarioRegistroSerializer
-        
-        return UsuarioListaSerializer
+        return UsuarioService.get_serializer_class(self.action)
 
-#vista para mantener autenticado al usuario
 
 class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [AllowAny]
 
     def get(self, request):
         serializer = UsuarioListaSerializer(request.user)

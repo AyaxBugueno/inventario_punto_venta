@@ -18,7 +18,7 @@ if os.path.exists(env_file):
     environ.Env.read_env(env_file)
 
 SECRET_KEY = env('SECRET_KEY',)
-DEBUG = True
+DEBUG = env('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOST', default=['127.0.0.1','localhost'])
 
 # Application definition
@@ -52,8 +52,8 @@ MIDDLEWARE = [
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:5173",
+    "http://localhost:8000",
+    "http://localhost:5173",
 ]
 
 CORS_ALLOW_CREDENTIALS = True

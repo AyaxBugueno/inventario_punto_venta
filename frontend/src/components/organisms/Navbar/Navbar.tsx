@@ -1,20 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-// Asegúrate de que las rutas a tus imports sean correctas
 import { NAV_LINKS } from '../../../data/navigation';
 import { LogoutButton } from '../../molecules/LogoutBtn';
+import api from '../../../api/axios';
+
+const getUsernameFromStorage = () => localStorage.getItem('username') || '';
+const getInitialFromStorage = () => {
+    const username = localStorage.getItem('username');
+    return username ? username.charAt(0).toUpperCase() : 'U';
+};
 
 export const Navbar = () => {
-    const [initial, setInitial] = useState("U");
-    const [name, setName] = useState("");
     const location = useLocation();
+    const initialized = useRef(false);
+    const [username, setUsername] = useState(getUsernameFromStorage);
+    const [initial, setInitial] = useState(getInitialFromStorage);
 
     useEffect(() => {
-        const username = localStorage.getItem('username');
-        if (username) {
-            setInitial(username.charAt(0).toUpperCase());
-            setName(username);
+        if (initialized.current) return;
+        initialized.current = true;
+
+        const storedUsername = localStorage.getItem('username');
+        if (storedUsername) {
+            return;
         }
+
+        api.get('/me/')
+            .then((response) => {
+                const userData = response.data;
+                const displayName = userData.username || userData.first_name || userData.email || 'Usuario';
+                localStorage.setItem('username', displayName);
+                setUsername(displayName);
+                setInitial(displayName.charAt(0).toUpperCase());
+            })
+            .catch(() => {});
     }, []);
 
     // Calculamos el índice activo para que la caja "hundida" sepa a dónde deslizarse
@@ -41,7 +60,7 @@ export const Navbar = () => {
                     {/* Textos con truncate por si el nombre es muy largo */}
                     <div className="flex flex-col pr-3 overflow-hidden">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">Bienvenido</span>
-                        <span className="text-sm text-slate-800 font-bold leading-none truncate">{name || 'Usuario'}</span>
+                        <span className="text-sm text-slate-800 font-bold leading-none truncate">{username}</span>
                     </div>
                 </div>
             </div>
